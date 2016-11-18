@@ -8,9 +8,11 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -37,6 +39,7 @@ import java.util.UUID;
 import co.poynt.api.model.Business;
 import co.poynt.api.model.OrderItem;
 import co.poynt.os.Constants;
+import co.poynt.os.contentproviders.orders.transactionreferences.TransactionreferencesColumns;
 import co.poynt.os.model.Intents;
 import co.poynt.os.model.Payment;
 import co.poynt.os.model.PaymentStatus;
@@ -71,6 +74,8 @@ public class SampleActivity extends Activity {
     TextView tokenInfo;
     TextView userInfo;
     List<OrderItem> items;
+
+    String lastReferenceId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -370,6 +375,7 @@ public class SampleActivity extends Activity {
 
         Payment payment = new Payment();
         String referenceId = UUID.randomUUID().toString();
+        lastReferenceId = referenceId;
         payment.setReferenceId(referenceId);
         payment.setAmount(amount);
         payment.setCurrency(currencyCode);
@@ -400,28 +406,62 @@ public class SampleActivity extends Activity {
             if (resultCode == Activity.RESULT_OK) {
                 if (data != null) {
                     Payment payment = data.getParcelableExtra(Intents.INTENT_EXTRAS_PAYMENT);
-                    Log.d(TAG, "Received onPaymentAction from PaymentFragment w/ Status("
-                            + payment.getStatus() + ")");
-                    if (payment.getStatus().equals(PaymentStatus.COMPLETED)) {
-                        Toast.makeText(this, "Payment Completed", Toast.LENGTH_LONG).show();
-                    } else if (payment.getStatus().equals(PaymentStatus.AUTHORIZED)) {
-                        Toast.makeText(this, "Payment Authorized", Toast.LENGTH_LONG).show();
-                    } else if (payment.getStatus().equals(PaymentStatus.CANCELED)) {
-                        Toast.makeText(this, "Payment Canceled", Toast.LENGTH_LONG).show();
-                    } else if (payment.getStatus().equals(PaymentStatus.FAILED)) {
-                        Toast.makeText(this, "Payment Failed", Toast.LENGTH_LONG).show();
-                    } else if (payment.getStatus().equals(PaymentStatus.REFUNDED)) {
-                        Toast.makeText(this, "Payment Refunded", Toast.LENGTH_LONG).show();
-                    } else if (payment.getStatus().equals(PaymentStatus.VOIDED)) {
-                        Toast.makeText(this, "Payment Voided", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "Payment Completed", Toast.LENGTH_LONG).show();
+                    payment = null;
+                    if (payment == null){
+                        contentResolverHack();
+                    }else {
+                        Log.d(TAG, "Received onPaymentAction from PaymentFragment w/ Status("
+                                + payment.getStatus() + ")");
+                        if (payment.getStatus().equals(PaymentStatus.COMPLETED)) {
+                            Toast.makeText(this, "Payment Completed", Toast.LENGTH_LONG).show();
+                        } else if (payment.getStatus().equals(PaymentStatus.AUTHORIZED)) {
+                            Toast.makeText(this, "Payment Authorized", Toast.LENGTH_LONG).show();
+                        } else if (payment.getStatus().equals(PaymentStatus.CANCELED)) {
+                            Toast.makeText(this, "Payment Canceled", Toast.LENGTH_LONG).show();
+                        } else if (payment.getStatus().equals(PaymentStatus.FAILED)) {
+                            Toast.makeText(this, "Payment Failed", Toast.LENGTH_LONG).show();
+                        } else if (payment.getStatus().equals(PaymentStatus.REFUNDED)) {
+                            Toast.makeText(this, "Payment Refunded", Toast.LENGTH_LONG).show();
+                        } else if (payment.getStatus().equals(PaymentStatus.VOIDED)) {
+                            Toast.makeText(this, "Payment Voided", Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(this, "Payment Completed", Toast.LENGTH_LONG).show();
+                        }
                     }
                 }
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 Toast.makeText(this, "Payment Canceled", Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private void contentResolverHack(){
+        ContentResolver resolver = getContentResolver();
+        String [] projection = new String[]{TransactionreferencesColumns.TRANSACTIONID};
+        //String referenceId = "123456789";
+        Cursor cursor = resolver.query(TransactionreferencesColumns.CONTENT_URI,
+                projection,
+                TransactionreferencesColumns.REFERENCEID + " = ?",
+                new String[]{lastReferenceId},
+                null);
+        List<String> transactions = new ArrayList<>();
+        if (cursor != null && cursor.getCount() > 0){
+            while(cursor.moveToNext()) {
+                transactions.add(cursor.getString(0));
+            }
+        }
+
+        for (String t : transactions){
+            Log.d(TAG, "found: "+ t);
+            Toast.makeText(this, "refId: " + lastReferenceId + "\ntxn id: " + t, Toast.LENGTH_SHORT).show();
+            // for each transaction call IPoyntTransactionService.getTransaction to get full Transaction object
+        }
+
+        if (transactions.size() == 0){
+            Log.d(TAG, "No Transaction found with reference id: " + lastReferenceId);
+        }
+
+        cursor.close();
     }
 
     /**

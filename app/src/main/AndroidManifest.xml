@@ -3,6 +3,9 @@
     package="co.poynt.samples">
 
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <uses-permission
+        android:name="co.poynt.orders.ACCESS_ORDERS" />
+
 
     <!-- Poynt Service Permissions -->
     <uses-permission android:name="poynt.permission.BUSINESS_SERVICE" />

@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
                     Gson gson = new GsonBuilder().setPrettyPrinting().create();
                     Type transactionType = new TypeToken<Transaction>(){}.getType();
                     logReceivedMessage(gson.toJson(transaction, transactionType));
+                    Log.d(TAG, "READ CARD DATA: " + new Gson().toJson(transaction, transactionType));
                 }
             }
         } else if (resultCode == Activity.RESULT_CANCELED) {
