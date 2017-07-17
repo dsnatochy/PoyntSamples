@@ -5,19 +5,26 @@ import android.content.ComponentName;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -154,7 +161,7 @@ public class SecondScreenServiceV2Activity extends Activity {
              *                 TITLE - to set custom title
              *                 SECONDARY_TITLE
              */
-            options.putString(Intents.EXTRA_TITLE, "Give Me Tip please!");
+            options.putString(Intents.EXTRA_TITLE, "Give Me Tip please! Yayayaya aya ay ya yayay a");
             options.putString(Intents.EXTRA_SECONDARY_TITLE, "yey enter more...");
             //options.putString(Intents.EXTRA_MODE, Intents.EXTRA_TIP_MODE_CUSTOM);
             options.putString(Intents.EXTRA_MODE, Intents.EXTRA_TIP_MODE_PERCENTS);
@@ -413,21 +420,46 @@ public class SecondScreenServiceV2Activity extends Activity {
 
     @OnClick(R.id.displayMessage)
     public void showConfirmation() {
-        try {
-            // Supported options
-            // Intents.EXTRA_BACKGROUND_IMAGE  (value should be a Bitmap object)
-            // Intents.EXTRA_CONTENT_TYPE
-            Bundle options = new Bundle();
-            Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.thank_you_screen_bg);
-            options.putParcelable(Intents.EXTRA_BACKGROUND_IMAGE, background);
-            options.putString("FONT_COLOR", "#eef442");
-            //secondScreenService.displayMessage("", options);
-            // secondScreenService.displayMessage("Happy Friday!", options);
-            options.putString(Intents.EXTRA_CONTENT_TYPE, Intents.EXTRA_CONTENT_TYPE_HTML);
-            secondScreenService.displayMessage("<h2>Thank You</h2><p>Good-bye!</p>", options);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+
+            final WebView webview = new WebView(this);
+            webview.loadData("<html><body background=\"#000000\"><h1>Hello</h1></body></html>",
+                    "text/html; charset=UTF-8", null);
+            webview.setWebViewClient(new WebViewClient(){
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    Bitmap bm = Bitmap.createBitmap(800, 480, Bitmap.Config.ARGB_8888);
+                    Canvas c = new Canvas(bm);
+                    webview.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+                    webview.draw(c);
+                    // Supported options
+                    // Intents.EXTRA_BACKGROUND_IMAGE  (value should be a Bitmap object)
+                    // Intents.EXTRA_CONTENT_TYPE
+                    Bundle options = new Bundle();
+                    Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.thank_you_screen_bg);
+                    options.putParcelable(Intents.EXTRA_BACKGROUND_IMAGE, bm);
+
+                    OutputStream stream = null;
+                    try {
+                        stream = new FileOutputStream("/sdcard/teach.png");
+                        bm.compress(Bitmap.CompressFormat.PNG, 80, stream);
+                        if (stream != null) stream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        //bm.recycle();
+                    }
+
+                    //options.putString("FONT_COLOR", "#eef442");
+                    //secondScreenService.displayMessage("", options);
+                    // secondScreenService.displayMessage("Happy Friday!", options);
+                    //options.putString(Intents.EXTRA_CONTENT_TYPE, Intents.EXTRA_CONTENT_TYPE_HTML);
+                    try {
+                        secondScreenService.displayMessage("", options);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
     }
 
     private void showConfirmation(String message) {

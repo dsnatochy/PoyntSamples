@@ -17,6 +17,7 @@
     <uses-permission android:name="poynt.permission.BUSINESS_SERVICE" />
     <uses-permission android:name="com.poynt.store.BILLING" />
     <uses-permission android:name="poynt.permission.ACCESSORY_MANAGER" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
