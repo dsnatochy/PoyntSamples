@@ -21,6 +21,7 @@ public class MainActivity extends Activity {
     private Button businessServiceActivityBtn;
     private Button billingServiceActivityBtn;
     private Button accessoriesActivityBtn;
+    private Button printerDiscoveryActivityBtn;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -138,6 +139,16 @@ public class MainActivity extends Activity {
                 startActivity(intent);
             }
         });
+
+        printerDiscoveryActivityBtn = (Button) findViewById(R.id.printerDiscoveryActivityBtn);
+        printerDiscoveryActivityBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, PrinterDiscoveryActivity.class);
+                startActivity(intent);
+            }
+        });
+
 
     }
 

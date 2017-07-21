@@ -19,6 +19,8 @@
     <uses-permission android:name="poynt.permission.ACCESSORY_MANAGER" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
+    <uses-permission android:name="co.poynt.receipts.ACCESS_RECEIPT_SETTINGS" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -113,7 +115,8 @@
         <activity
             android:name=".InAppBillingActivity"
             android:label="@string/title_activity_in_app_billing" />
-        <activity android:name=".AccessoriesActivity"></activity>
+        <activity android:name=".AccessoriesActivity" />
+        <activity android:name=".PrinterDiscoveryActivity"></activity>
     </application>
 
 </manifest>
