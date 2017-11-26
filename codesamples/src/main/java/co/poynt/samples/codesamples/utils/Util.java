@@ -131,7 +131,7 @@ public class Util {
         order.setAmounts(amounts);
 
         OrderStatuses orderStatuses = new OrderStatuses();
-        orderStatuses.setStatus(OrderStatus.COMPLETED);
+        orderStatuses.setStatus(OrderStatus.OPENED);
         order.setStatuses(orderStatuses);
         order.setId(UUID.randomUUID());
         return order;

@@ -29,10 +29,13 @@ import java.util.UUID;
 
 import co.poynt.api.model.Card;
 import co.poynt.api.model.CardType;
+import co.poynt.api.model.FulfillmentStatus;
 import co.poynt.api.model.FundingSourceAccountType;
 import co.poynt.api.model.Order;
+import co.poynt.api.model.OrderStatus;
 import co.poynt.api.model.Transaction;
 import co.poynt.api.model.TransactionAction;
+import co.poynt.api.model.TransactionStatusSummary;
 import co.poynt.os.contentproviders.orders.transactionreferences.TransactionreferencesColumns;
 import co.poynt.os.model.Intents;
 import co.poynt.os.model.Payment;
@@ -84,6 +87,20 @@ public class PaymentActivity extends Activity {
     private IPoyntOrderServiceListener saveOrderCallback = new IPoyntOrderServiceListener.Stub() {
         public void orderResponse(Order order, String s, PoyntError poyntError) throws RemoteException {
             Log.d("orderListener", "poyntError: " + (poyntError == null ? "" : poyntError.toString()));
+            if(order != null) {
+                order.getStatuses().setStatus(OrderStatus.COMPLETED);
+                order.getStatuses().setTransactionStatusSummary(TransactionStatusSummary.COMPLETED);
+                order.getStatuses().setFulfillmentStatus(FulfillmentStatus.FULFILLED);
+                mOrderService.completeOrder(order.getId().toString(), order, UUID.randomUUID().toString(),
+                        new IPoyntOrderServiceListener.Stub() {
+                    @Override
+                    public void orderResponse(Order order, String s, PoyntError poyntError) throws RemoteException {
+                        if(order != null) {
+                            logData(order.toString());
+                        }
+                    }
+                });
+            }
         }
     };
 
@@ -438,7 +455,12 @@ public class PaymentActivity extends Activity {
     }
 
     public void logData(final String data) {
-        Log.d(TAG, data);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, data);
+            }
+        });
     }
 
 }
