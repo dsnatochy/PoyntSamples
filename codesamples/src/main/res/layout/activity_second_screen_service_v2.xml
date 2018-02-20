@@ -71,4 +71,11 @@
         android:text="Scan Bar/Qr-Code"
         android:textAlignment="center" />
 
+    <Button
+        android:id="@+id/showDccBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show DCC"
+        android:textAlignment="center" />
+
 </LinearLayout>

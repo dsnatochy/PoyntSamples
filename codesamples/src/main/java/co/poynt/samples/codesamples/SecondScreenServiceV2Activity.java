@@ -35,12 +35,14 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import co.poynt.api.model.Discount;
+import co.poynt.api.model.ExchangeRate;
 import co.poynt.api.model.Fee;
 import co.poynt.api.model.OrderItem;
 import co.poynt.api.model.TransactionAmounts;
 import co.poynt.os.model.Intents;
 import co.poynt.os.model.ReceiptOption;
 import co.poynt.os.model.ReceiptType;
+import co.poynt.os.services.v1.IPoyntSecondScreenDynamicCurrConversionListener;
 import co.poynt.os.services.v2.IPoyntActionButtonListener;
 import co.poynt.os.services.v2.IPoyntEmailEntryListener;
 import co.poynt.os.services.v2.IPoyntPhoneEntryListener;
@@ -67,6 +69,9 @@ public class SecondScreenServiceV2Activity extends Activity {
     Button collectAgreement;
     @Bind(R.id.scanCode)
     Button scanCode;
+
+    @Bind(R.id.showDccBtn)
+    Button showDcc;
 
     private IPoyntSecondScreenService secondScreenService;
 
@@ -553,6 +558,48 @@ public class SecondScreenServiceV2Activity extends Activity {
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+    }
+
+    @OnClick(R.id.showDccBtn)
+    public void showDccScreen() {
+        ExchangeRate ex = new ExchangeRate();
+        ex.setProvider("Citibank UAE"); // printed on the receipt
+        ex.setTxnAmount(10000L);
+        ex.setTxnCurrency("USD");
+
+        ex.setRate(367326L);
+        ex.setRatePrecision(5L); // basically the rate above is 3.67326
+
+        ex.setCardCurrency("AED");
+        ex.setMarkupPercentage("250"); // shows the markup in the UI
+        ex.setCardAmount(37651L);
+
+        Bundle options = new Bundle();
+        options.putString(Intents.EXTRA_DCC_DISCLAIMER,
+                "I have been offered a choice of payment currencies including AED. This currency conversion service is offered by this merchant.");
+        options.putString(Intents.EXTRA_HIDE_CONVERSION_FEE, "true");
+        options.putString(Intents.EXTRA_DCC_DISCLAIMER_FONT_SIZE, "25sp");
+
+        //options.putString(Intents.EXTRA_DCC_SKIP_CONFIRMATION, "true");
+        try {
+            secondScreenService.captureDccChoice(options, ex, null, new IPoyntSecondScreenDynamicCurrConversionListener.Stub() {
+                @Override
+                public void onCurrencyConversionSelected(boolean b) throws RemoteException {
+                    Log.d(TAG, "onCurrencyConversionSelected: " + b);
+                    showConfirmation();
+                }
+
+                @Override
+                public void onCancel() throws RemoteException {
+                    Log.d(TAG, "onCancel()");
+                }
+            });
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+
+
     }
 
 }
