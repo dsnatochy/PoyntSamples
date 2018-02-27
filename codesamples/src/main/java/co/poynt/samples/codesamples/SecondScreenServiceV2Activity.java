@@ -425,45 +425,59 @@ public class SecondScreenServiceV2Activity extends Activity {
 
     @OnClick(R.id.displayMessage)
     public void showConfirmation() {
+            runOnUiThread(new Runnable() {
+               /* @Override
+                public void run() {
 
-            final WebView webview = new WebView(this);
-            webview.loadData("<html><body background=\"#000000\"><h1>Hello</h1></body></html>",
-                    "text/html; charset=UTF-8", null);
-            webview.setWebViewClient(new WebViewClient(){
-                @Override
-                public void onPageFinished(WebView view, String url) {
-                    Bitmap bm = Bitmap.createBitmap(800, 480, Bitmap.Config.ARGB_8888);
-                    Canvas c = new Canvas(bm);
-                    webview.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-                    webview.draw(c);
-                    // Supported options
-                    // Intents.EXTRA_BACKGROUND_IMAGE  (value should be a Bitmap object)
-                    // Intents.EXTRA_CONTENT_TYPE
-                    Bundle options = new Bundle();
-                    Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.thank_you_screen_bg);
-                    options.putParcelable(Intents.EXTRA_BACKGROUND_IMAGE, bm);
+                    final WebView webview = new WebView(SecondScreenServiceV2Activity.this);
+                    webview.loadData("<html><body background=\"#000000\"><h1>Hello</h1></body></html>",
+                            "text/html; charset=UTF-8", null);
+                    webview.setWebViewClient(new WebViewClient(){
+                        @Override
+                        public void onPageFinished(WebView view, String url) {
+                            Bitmap bm = Bitmap.createBitmap(800, 480, Bitmap.Config.ARGB_8888);
+                            Canvas c = new Canvas(bm);
+                            webview.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+                            webview.draw(c);
+                            // Supported options
+                            // Intents.EXTRA_BACKGROUND_IMAGE  (value should be a Bitmap object)
+                            // Intents.EXTRA_CONTENT_TYPE
+                            Bundle options = new Bundle();
+                            Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.thank_you_screen_bg);
+                            options.putParcelable(Intents.EXTRA_BACKGROUND_IMAGE, bm);
 
-                    OutputStream stream = null;
-                    try {
-                        stream = new FileOutputStream("/sdcard/teach.png");
-                        bm.compress(Bitmap.CompressFormat.PNG, 80, stream);
-                        if (stream != null) stream.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        //bm.recycle();
-                    }
+                            OutputStream stream = null;
+                            try {
+                                stream = new FileOutputStream("/sdcard/teach.png");
+                                bm.compress(Bitmap.CompressFormat.PNG, 80, stream);
+                                if (stream != null) stream.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } finally {
+                                //bm.recycle();
+                            }
 
-                    //options.putString("FONT_COLOR", "#eef442");
-                    //secondScreenService.displayMessage("", options);
-                    // secondScreenService.displayMessage("Happy Friday!", options);
-                    //options.putString(Intents.EXTRA_CONTENT_TYPE, Intents.EXTRA_CONTENT_TYPE_HTML);
-                    try {
-                        secondScreenService.displayMessage("", options);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                }
+                            //options.putString("FONT_COLOR", "#eef442");
+                            //secondScreenService.displayMessage("", options);
+                            // secondScreenService.displayMessage("Happy Friday!", options);
+                            //options.putString(Intents.EXTRA_CONTENT_TYPE, Intents.EXTRA_CONTENT_TYPE_HTML);
+                            try {
+                                secondScreenService.displayMessage("", options);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+
+                }*/
+               public void run() {
+                   try {
+                       secondScreenService.displayMessage("Success!", null);
+                   } catch (RemoteException e) {
+                       e.printStackTrace();
+                   }
+               }
+
             });
     }
 
@@ -562,15 +576,29 @@ public class SecondScreenServiceV2Activity extends Activity {
 
     @OnClick(R.id.showDccBtn)
     public void showDccScreen() {
+        String currencies[] = {"AED","ALL","AMD","ANG","ANG","AOA","AQD","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BGN","BHD","BIF","BMD","BND","BOB","BRL","BSD","BWP","BYR","BZD","CAD","CDF","CHF","CLP","CNY","COP","CRC","CUP","CVE","CYP","CZK","DJF","DKK","DOP","DZD","ECS","EEK","EGP","ETB","EUR","FJD","GBP","GEL","GGP","GHS","GIP","GMD","GNF","GTQ","GYD","HKD","HNL","HRK","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LTL","LVL","LYD","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRO","MTL","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG","QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SKK","SLL","SOS","SRD","STD","SVC","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS","UAH","UGX","USD","UYU","UZS","VEF","VND","VUV","XAF","XCD","XOF","XPF","XPF","YER","ZAR","ZMK","ZWD"};
+
+        for (int i = 0; i < currencies.length -1; i += 2) {
+//        for (int i = 0; i < 1; i += 2) {
+            showDccScreenInternal(currencies[i], currencies[i+1]);
+            try {
+                Thread.sleep(500L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void showDccScreenInternal(String txnCurrency, String cardCurrency) {
         ExchangeRate ex = new ExchangeRate();
         ex.setProvider("Citibank UAE"); // printed on the receipt
         ex.setTxnAmount(10000L);
-        ex.setTxnCurrency("USD");
+        ex.setTxnCurrency(txnCurrency);
 
         ex.setRate(367326L);
         ex.setRatePrecision(5L); // basically the rate above is 3.67326
 
-        ex.setCardCurrency("AED");
+        ex.setCardCurrency(cardCurrency);
         ex.setMarkupPercentage("250"); // shows the markup in the UI
         ex.setCardAmount(37651L);
 
@@ -578,11 +606,11 @@ public class SecondScreenServiceV2Activity extends Activity {
         options.putString(Intents.EXTRA_DCC_DISCLAIMER,
                 "I have been offered a choice of payment currencies including AED. This currency conversion service is offered by this merchant.");
         options.putString(Intents.EXTRA_HIDE_CONVERSION_FEE, "true");
-        options.putString(Intents.EXTRA_DCC_DISCLAIMER_FONT_SIZE, "25sp");
+        options.putString(Intents.EXTRA_DCC_DISCLAIMER_FONT_SIZE, "22sp");
 
         //options.putString(Intents.EXTRA_DCC_SKIP_CONFIRMATION, "true");
         try {
-            secondScreenService.captureDccChoice(options, ex, null, new IPoyntSecondScreenDynamicCurrConversionListener.Stub() {
+            secondScreenService.captureDccChoice(options, ex, new IPoyntSecondScreenDynamicCurrConversionListener.Stub() {
                 @Override
                 public void onCurrencyConversionSelected(boolean b) throws RemoteException {
                     Log.d(TAG, "onCurrencyConversionSelected: " + b);
@@ -597,9 +625,6 @@ public class SecondScreenServiceV2Activity extends Activity {
         } catch (RemoteException e) {
             e.printStackTrace();
         }
-
-
-
     }
 
 }
