@@ -23,5 +23,8 @@ allprojects {
             url 'https://nexus.poynt.com/content/repositories/releases'
         }
         mavenCentral()
+        flatDir {
+            dirs 'libs'
+        }
     }
 }
