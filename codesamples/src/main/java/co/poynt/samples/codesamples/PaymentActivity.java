@@ -2,10 +2,12 @@ package co.poynt.samples.codesamples;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.os.AsyncTask;
@@ -25,17 +27,29 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import co.poynt.api.model.CaptureAllResponse;
 import co.poynt.api.model.Card;
 import co.poynt.api.model.CardType;
+import co.poynt.api.model.CatalogDisplayMetadata;
+import co.poynt.api.model.ClientContext;
+import co.poynt.api.model.CustomFundingSource;
+import co.poynt.api.model.CustomFundingSourceType;
+import co.poynt.api.model.FundingSource;
 import co.poynt.api.model.FundingSourceAccountType;
+import co.poynt.api.model.FundingSourceType;
 import co.poynt.api.model.Order;
+import co.poynt.api.model.ProcessorResponse;
+import co.poynt.api.model.ProcessorStatus;
 import co.poynt.api.model.Transaction;
 import co.poynt.api.model.TransactionAction;
+import co.poynt.api.model.TransactionAmounts;
+import co.poynt.api.model.TransactionStatus;
 import co.poynt.os.contentproviders.orders.transactionreferences.TransactionreferencesColumns;
 import co.poynt.os.model.Intents;
 import co.poynt.os.model.Payment;
@@ -56,17 +70,23 @@ public class PaymentActivity extends Activity {
 
     private IPoyntTransactionService mTransactionService;
     private IPoyntOrderService mOrderService;
+    Type transactionType = new TypeToken<Transaction>() {
+    }.getType();
 
     Button chargeBtn;
     Button payOrderBtn;
     Button launchRegisterBtn;
     Button zeroDollarAuthBtn;
+    Button createCashTxnBtn;
+    Button createCheckTxnBtn;
+    Button captureAllBtn;
     TextView orderSavedStatus;
 
     private Gson gson;
 
     String lastReferenceId;
 
+    BroadcastReceiver settlementReceiver;
 
     /*
      * Class for interacting with the OrderService
@@ -151,6 +171,149 @@ public class PaymentActivity extends Activity {
                 doZeroDollarAuth();
             }
         });
+
+        createCashTxnBtn = (Button) findViewById(R.id.createCashTxnBtn);
+        createCashTxnBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Transaction t = new Transaction();
+                t.setAction(TransactionAction.SALE);
+
+                TransactionAmounts amounts = new TransactionAmounts();
+                String currency = Currency.getInstance(getResources().getConfiguration().locale).getCurrencyCode();
+                amounts.setCurrency(currency);
+                long amount = 1000L;
+                amounts.setOrderAmount(amount);
+                amounts.setTransactionAmount(amount);
+                t.setAmounts(amounts);
+
+                FundingSource fs = new FundingSource();
+                fs.setType(FundingSourceType.CASH);
+                t.setFundingSource(fs);
+
+                t.setStatus(TransactionStatus.CAPTURED);
+
+                ClientContext context = new ClientContext();
+                context.setBusinessId(UUID.fromString("803833ba-cb97-434d-b158-30db6973173b"));
+                t.setContext(context);
+
+                try {
+                    mTransactionService.processTransaction(t, UUID.randomUUID().toString(), new IPoyntTransactionServiceListener.Stub() {
+                        @Override
+                        public void onResponse(Transaction transaction, String s, PoyntError poyntError) throws RemoteException {
+                            if (transaction !=null) {
+                                logData(gson.toJson(transaction, transactionType));
+                            }else {
+                                Log.d(TAG, "onResponse: error: " + poyntError);
+                            }
+                        }
+
+                        @Override
+                        public void onLoginRequired() throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onLaunchActivity(Intent intent, String s) throws RemoteException {
+
+                        }
+                    });
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+                /*
+{"action":"SALE","amounts":{"cashbackAmount":0,"currency":"USD","orderAmount":1200,"tipAmount":0,"transactionAmount":1200},
+"context":{"businessId":"803833ba-cb97-434d-b158-30db6973173b","businessType":"TEST_MERCHANT","employeeUserId":26835234,"mcc":"5812","mid":"34kdx7s8gs","source":"INSTORE","sourceApp":"co.poynt.sample","storeAddressCity":"Palo Alto","storeAddressTerritory":"California","storeId":"b4c4d6e6-6a5e-4ca9-86ee-a086ff2fc9c9","storeTimezone":"America/Los_Angeles","tid":"o5lp"},
+"fundingSource":{"type":"CASH"},"id":"6495aa67-9c79-4686-add0-294d079f6e24","processorOptions":{"type":"emi","originalAmount":"2400","installments":"2"},"references":[{"customType":"referenceId","id":"0efa7271-0d05-4134-a1bd-5cc68ebf91e5","type":"CUSTOM"}],"status":"CAPTURED"}
+                 */
+
+            }
+        });
+
+        createCheckTxnBtn = (Button) findViewById(R.id.createCheckTxnBtn);
+        createCheckTxnBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Transaction t = new Transaction();
+                t.setAction(TransactionAction.SALE);
+
+                TransactionAmounts amounts = new TransactionAmounts();
+                String currency = Currency.getInstance(getResources().getConfiguration().locale).getCurrencyCode();
+                amounts.setCurrency(currency);
+                long amount = 1000L;
+                amounts.setOrderAmount(amount);
+                amounts.setTransactionAmount(amount);
+                t.setAmounts(amounts);
+
+                FundingSource fs = new FundingSource();
+                fs.setType(FundingSourceType.CUSTOM_FUNDING_SOURCE);
+                CustomFundingSource cfs = new CustomFundingSource();
+                cfs.setAccountId(UUID.randomUUID().toString());
+                cfs.setProvider("Talech");
+                cfs.setType(CustomFundingSourceType.CHEQUE);
+                fs.setCustomFundingSource(cfs);
+                t.setFundingSource(fs);
+
+                ProcessorResponse pr = new ProcessorResponse();
+                pr.setStatus(ProcessorStatus.Successful);
+                pr.setStatusCode("1");
+                pr.setTransactionId(UUID.randomUUID().toString());
+                t.setProcessorResponse(pr);
+                t.setStatus(TransactionStatus.CAPTURED);
+
+                ClientContext context = new ClientContext();
+                context.setBusinessId(UUID.fromString("803833ba-cb97-434d-b158-30db6973173b"));
+                t.setContext(context);
+
+                try {
+                    mTransactionService.processTransaction(t, UUID.randomUUID().toString(), new IPoyntTransactionServiceListener.Stub() {
+                        @Override
+                        public void onResponse(Transaction transaction, String s, PoyntError poyntError) throws RemoteException {
+                            if (transaction !=null) {
+                                logData(gson.toJson(transaction, transactionType));
+                            }else {
+                                Log.d(TAG, "onResponse: error: " + poyntError);
+                            }
+                        }
+
+                        @Override
+                        public void onLoginRequired() throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onLaunchActivity(Intent intent, String s) throws RemoteException {
+
+                        }
+                    });
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        captureAllBtn = (Button) findViewById(R.id.captureAllBtn);
+        captureAllBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    mTransactionService.captureAllTransactions(UUID.randomUUID().toString());
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        settlementReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                CaptureAllResponse response = intent.getParcelableExtra(Intents.INTENT_EXTRA_SETTLEMENT_ACCEPTED_RESPONSE);
+                PoyntError error = intent.getParcelableExtra(Intents.INTENT_EXTRA_SETTLEMENT_ACCEPTANCE_ERROR);
+                String requestId = intent.getStringExtra(Intents.INTENT_EXTRA_SETTLEMENT_REQUEST_ID);
+                Log.d(TAG, "settlement response: " + response);
+                Log.d(TAG, "settlement error: " + error);
+            }
+        };
 
 /*
 
@@ -472,6 +635,21 @@ public class PaymentActivity extends Activity {
         } else {
             logData("No Transactions found");
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intents.ACTION_SETTLEMENT_REQUEST_ACCEPTED);
+        filter.addAction(Intents.ACTION_SETTLEMENT_REQUEST_FAILED);
+        registerReceiver(settlementReceiver, filter);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(settlementReceiver);
     }
 
     public void logData(final String data) {

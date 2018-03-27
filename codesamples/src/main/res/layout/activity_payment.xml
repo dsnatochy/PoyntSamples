@@ -46,6 +46,26 @@
         android:layout_height="wrap_content"
         android:text="$0 Auth"
         android:id="@+id/zeroDollarAuthBtn"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/createCashTxnBtn"
+        android:text="Record Cash Transaction"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/createCheckTxnBtn"
+        android:text="Record Check Transaction"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/captureAllBtn"
+        android:text="Capture All (and settle)"/>
+
+
 <!--
 
     <Button
