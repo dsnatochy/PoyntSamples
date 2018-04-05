@@ -15,15 +15,20 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import co.poynt.os.model.AccessoryProvider;
 import co.poynt.os.model.AccessoryProviderFilter;
 import co.poynt.os.model.AccessoryType;
-import co.poynt.os.model.CashDrawerStatus;
 import co.poynt.os.model.PoyntError;
+import co.poynt.os.model.PrintedReceiptLine;
+import co.poynt.os.model.PrintedReceiptLineFont;
+import co.poynt.os.model.PrintedReceiptSection;
+import co.poynt.os.model.PrintedReceiptV2;
+import co.poynt.os.model.PrinterStatus;
 import co.poynt.os.services.v1.IPoyntAccessoryManagerListener;
-import co.poynt.os.services.v1.IPoyntCashDrawerService;
-import co.poynt.os.services.v1.IPoyntCashDrawerServiceListener;
+import co.poynt.os.services.v1.IPoyntPrinterService;
+import co.poynt.os.services.v1.IPoyntPrinterServiceListener;
 import co.poynt.os.util.AccessoryProviderServiceHelper;
 
 public class AccessoriesActivity extends Activity {
@@ -34,7 +39,7 @@ public class AccessoriesActivity extends Activity {
     private ScrollView mScrollView;
 
     private AccessoryProviderServiceHelper accessoryProviderServiceHelper;
-    private HashMap<AccessoryProvider, IBinder> mCashDrawerServices = new HashMap<>();
+    private HashMap<AccessoryProvider, IBinder> mPrinterServices = new HashMap<>();
     private List<AccessoryProvider> providers;
 
     @Override
@@ -50,11 +55,11 @@ public class AccessoriesActivity extends Activity {
         mDumpTextView = (TextView) findViewById(R.id.consoleText);
         mScrollView = (ScrollView) findViewById(R.id.demoScroller);
 
-        Button openCashDrawer = (Button) findViewById(R.id.openCashDrawer);
-        openCashDrawer.setOnClickListener(new View.OnClickListener() {
+        Button printReceiptBtn = (Button) findViewById(R.id.printReceiptBtn);
+        printReceiptBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openCashDrawer();
+                printReceipt();
             }
         });
 
@@ -66,12 +71,12 @@ public class AccessoriesActivity extends Activity {
                     new AccessoryProviderServiceHelper.AccessoryManagerConnectionCallback() {
                         @Override
                         public void onConnected(AccessoryProviderServiceHelper accessoryProviderServiceHelper) {
-                            // when connected check if we have any cash drawers registered
+                            // when connected check if we have any printers registered
                             if (accessoryProviderServiceHelper.getAccessoryServiceManager() != null) {
-                                AccessoryProviderFilter filter = new AccessoryProviderFilter(AccessoryType.CASH_DRAWER);
-                                Log.d(TAG, "trying to get CASH DRAWER accessory...");
+                                AccessoryProviderFilter filter = new AccessoryProviderFilter(AccessoryType.PRINTER);
+                                Log.d(TAG, "trying to get PRINTER accessory...");
                                 try {
-                                    // look up the cash drawers using the filter
+                                    // look up the printers using the filter
                                     accessoryProviderServiceHelper.getAccessoryServiceManager().getAccessoryProviders(
                                             filter, poyntAccessoryManagerListener);
                                 } catch (RemoteException e) {
@@ -115,65 +120,65 @@ public class AccessoriesActivity extends Activity {
         }
 
         @Override
-        public void onSuccess(final List<AccessoryProvider> cashDrawers) throws RemoteException {
+        public void onSuccess(final List<AccessoryProvider> printers) throws RemoteException {
             // now that we are connected - request service connections to each accessory provider
-            if (cashDrawers != null && cashDrawers.size() > 0) {
+            if (printers != null && printers.size() > 0) {
                 // save it for future reference
-                providers = cashDrawers;
+                providers = printers;
                 if (accessoryProviderServiceHelper.getAccessoryServiceManager() != null) {
-                    // for each cash drawer accessory - request "service" connections if it's still connected
-                    for (AccessoryProvider cashDrawer : cashDrawers) {
-                        Log.d(TAG, "Cashdrawer: " + cashDrawer.toString());
-                        if (cashDrawer.isConnected()) {
+                    // for each printer accessory - request "service" connections if it's still connected
+                    for (AccessoryProvider printer : printers) {
+                        Log.d(TAG, "Printer: " + printer.toString());
+                        if (printer.isConnected()) {
                             // request service connection binder
                             // IMP: note that this method returns service connection if it already exists
                             // hence the need for both connection callback and the returned value
                             IBinder binder = accessoryProviderServiceHelper.getAccessoryService(
-                                    cashDrawer, AccessoryType.CASH_DRAWER,
+                                    printer, AccessoryType.PRINTER,
                                     providerConnectionCallback);
                             //already cached connection.
                             if (binder != null) {
-                                mCashDrawerServices.put(cashDrawer, binder);
+                                mPrinterServices.put(printer, binder);
                             }
                         }
                     }
                 }
             } else {
-                logReceivedMessage("No Cash Drawers found");
+                logReceivedMessage("No Printers found");
             }
         }
     };
 
     // this is the callback for the service connection to each accessory provider service in this case
-    // the android service supporting cash drawer accessory
+    // the android service supporting  printer accessory
     private AccessoryProviderServiceHelper.ProviderConnectionCallback providerConnectionCallback
             = new AccessoryProviderServiceHelper.ProviderConnectionCallback() {
 
         @Override
         public void onConnected(AccessoryProvider provider, IBinder binder) {
-            // in some cases multiple accessories of the same type (eg. two cash drawers of same
+            // in some cases multiple accessories of the same type (eg. two printers of same
             // make/model or two star printers) might be supported by the same android service
             // so here we check if we need to share the same service connection for more than
             // one accessory provider
             List<AccessoryProvider> otherProviders = findMatchingProviders(provider);
             // all of them share the same service binder
             for (AccessoryProvider matchedProvider : otherProviders) {
-                mCashDrawerServices.put(matchedProvider, binder);
+                mPrinterServices.put(matchedProvider, binder);
             }
         }
 
         @Override
         public void onDisconnected(AccessoryProvider provider, IBinder binder) {
             // set the lookup done to false so we can try looking up again if needed
-            if (mCashDrawerServices != null && mCashDrawerServices.size() > 0) {
-                mCashDrawerServices.remove(binder);
+            if (mPrinterServices != null && mPrinterServices.size() > 0) {
+                mPrinterServices.remove(binder);
                 // try to renew the connection.
                 if (accessoryProviderServiceHelper.getAccessoryServiceManager() != null) {
                     IBinder binder2 = accessoryProviderServiceHelper.getAccessoryService(
-                            provider, AccessoryType.CASH_DRAWER,
+                            provider, AccessoryType.PRINTER,
                             providerConnectionCallback);
                     if (binder2 != null) {//already cached connection.
-                        mCashDrawerServices.put(provider, binder2);
+                        mPrinterServices.put(provider, binder2);
                     }
                 }
             }
@@ -215,45 +220,67 @@ public class AccessoriesActivity extends Activity {
         });
     }
 
-    private void openCashDrawer() {
-        // IMP: here we are opening all connected cash drawers - but typically there should be
-        // an option offered to the merchant to select which cash drawer to open. For now that's the
+    private void printReceipt() {
+        // IMP: here we are printing using all connected printers - but typically there should be
+        // an option offered to the merchant to select which printer to use. For now that's the
         // app's responsibility
         if (providers != null && providers.size() > 0) {
-            logReceivedMessage("Opening cash drawer...");
+            logReceivedMessage("Printing...");
             for (AccessoryProvider provider : providers) {
                 try {
-                    IBinder binder = mCashDrawerServices.get(provider);
+                    IBinder binder = mPrinterServices.get(provider);
                     if (binder != null) {
-                        IPoyntCashDrawerService drawerService = IPoyntCashDrawerService.Stub.asInterface(binder);
-                        if (drawerService != null) {
-                            Log.d(TAG, "Opening Cash drawer");
-                            drawerService.openDrawerByName(
-                                    provider.getProviderName(),
-                                    "open",
-                                    new IPoyntCashDrawerServiceListener.Stub() {
+                        final IPoyntPrinterService printerService = IPoyntPrinterService.Stub.asInterface(binder);
+                        if (printerService != null) {
+                            Log.d(TAG, "Printing");
+                            printerService.printReceipt(UUID.randomUUID().toString(),
+                                    getPrintedReceipt(), new IPoyntPrinterServiceListener.Stub() {
                                         @Override
-                                        public void onResponse(CashDrawerStatus status, String requestId) throws RemoteException {
-                                            if (status != null &&
-                                                    (status.getCode() == CashDrawerStatus.Code.DISCONNECTED
-                                                            || status.getCode() == CashDrawerStatus.Code.ERROR
-                                                    )) {
-                                                logReceivedMessage("Failed to open Cash Drawer");
-                                            }
+                                        public void onPrintResponse(PrinterStatus printerStatus, String s) throws RemoteException {
+                                            // check printerStatus.getCode() and handle based on values below
+                                            /*
+                                                PRINTER_CONNECTED,
+                                                PRINTER_DISCONNECTED,
+                                                PRINTER_UNAVAILABLE,
+                                                PRINTER_JOB_PRINTED,
+                                                PRINTER_JOB_FAILED,
+                                                PRINTER_JOB_QUEUED,
+                                                PRINTER_ERROR_OUT_OF_PAPER,
+                                                PRINTER_ERROR_OTHER,
+                                                PRINTER_ERROR_IMAGE_OFFDOCK
+                                             */
+                                            Log.d(TAG, "onPrintResponse code: " + printerStatus.getCode());
                                         }
-                                    });
+                                    }, null);
                         }
                     } else {
                         logReceivedMessage("No service connection found");
                     }
                 } catch (RemoteException e) {
-                    Log.e(TAG, "Failed to communicate with cash drawer", e);
-                    logReceivedMessage("Failed to communicate with cash drawer");
+                    Log.e(TAG, "Failed to communicate with printer", e);
+                    logReceivedMessage("Failed to communicate with printer");
                 }
             }
         } else {
-            Log.e(TAG, "cash drawer not connected");
-            logReceivedMessage("No connected cash drawers found");
+            Log.e(TAG, "printer not connected");
+            logReceivedMessage("No connected printers found");
         }
+    }
+
+    private PrintedReceiptV2 getPrintedReceipt() {
+        PrintedReceiptV2 receipt = new PrintedReceiptV2();
+        List<PrintedReceiptLine> lines = new ArrayList<>();
+        lines.add(new PrintedReceiptLine("some random text"));
+        lines.add(new PrintedReceiptLine("more random text"));
+        lines.add(new PrintedReceiptLine("\n"));
+        lines.add(new PrintedReceiptLine("\n"));
+        lines.add(new PrintedReceiptLine("\n"));
+        lines.add(new PrintedReceiptLine("\n"));
+        lines.add(new PrintedReceiptLine("\n"));
+
+        PrintedReceiptLineFont font = new PrintedReceiptLineFont(PrintedReceiptLineFont.FONT_SIZE.FONT24, 26 /* line spacing */);
+        PrintedReceiptSection body1 = new PrintedReceiptSection(lines, font);
+        receipt.setBody1(body1);
+        return receipt;
     }
 }

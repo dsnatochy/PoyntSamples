@@ -17,10 +17,10 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/openCashDrawer"
+            android:id="@+id/printReceiptBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Open Cash Drawer" />
+            android:text="Print ReceiptV2" />
 
     </LinearLayout>
 
