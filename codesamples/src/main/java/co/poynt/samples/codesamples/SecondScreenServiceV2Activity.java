@@ -45,6 +45,7 @@ import co.poynt.os.model.ReceiptType;
 import co.poynt.os.services.v1.IPoyntSecondScreenDynamicCurrConversionListener;
 import co.poynt.os.services.v2.IPoyntActionButtonListener;
 import co.poynt.os.services.v2.IPoyntEmailEntryListener;
+import co.poynt.os.services.v2.IPoyntInstallmentPlanListener;
 import co.poynt.os.services.v2.IPoyntPhoneEntryListener;
 import co.poynt.os.services.v2.IPoyntReceiptChoiceListener;
 import co.poynt.os.services.v2.IPoyntScanCodeListener;
@@ -72,6 +73,9 @@ public class SecondScreenServiceV2Activity extends Activity {
 
     @Bind(R.id.showDccBtn)
     Button showDcc;
+
+    @Bind(R.id.showInstallmentsBtn)
+    Button showInstallmentsBtn;
 
     private IPoyntSecondScreenService secondScreenService;
 
@@ -574,13 +578,39 @@ public class SecondScreenServiceV2Activity extends Activity {
         }
     }
 
+    @OnClick(R.id.showInstallmentsBtn)
+    public void showInstallments(){
+        //String json = "{ \"backgroundColor\":\"#FFFFFF\", \"title\":{ \"label\": \"Select Payment Option\", \"textColor\": \"#0000FF\", \"fontSize\": 22 }, \"options\":[ { \"id\":\"mainOption\", \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"One-time\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"AED 3600\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option2\", \"width\":200, \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"3 mo\\nAED 1200\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"0% Interest\\n1% + AED 20\\nAmt AED 50\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option3\", \"width\":200, \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"6 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option4\", \"width\":400, \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"9 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FF0000\", \"fontSize\": 20 } } ] }jjj";
+        String json = "{ \"backgroundColor\":\"#FFFFFF\", \"title\":{ \"label\": \"Select Payment Option\", \"textColor\": \"#0A46ED\", \"fontSize\": 32 }, \"options\":[ { \"id\":\"mainOption\", \"backgroundColor\": \"#74BA59\", \"title\":{ \"label\": \"One-time\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"AED 3600\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option2\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"3 mo\\nAED 1200\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n1% + AED 20\\nAmt AED 50\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option3\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"6 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option4\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"9 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FF0000\", \"fontSize\": 20 } } ] }jjj";
+
+        Bundle options = new Bundle();
+        options.putString(Intents.EXTRA_INSTALLMENT_CONFIG, json);
+        try {
+            secondScreenService.captureInstallmentOption(options, new IPoyntInstallmentPlanListener.Stub() {
+                @Override
+                public void onOptionSelection(String s) throws RemoteException {
+                    Log.d(TAG, "onOptionSelection: " + s);
+                    secondScreenService.displayMessage("You've selected option: " + s,  null);
+                }
+
+                @Override
+                public void onError(String s) throws RemoteException {
+                    Log.e(TAG, "onError: " + s);
+                }
+            });
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
     @OnClick(R.id.showDccBtn)
     public void showDccScreen() {
         String currencies[] = {"AED","ALL","AMD","ANG","ANG","AOA","AQD","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BGN","BHD","BIF","BMD","BND","BOB","BRL","BSD","BWP","BYR","BZD","CAD","CDF","CHF","CLP","CNY","COP","CRC","CUP","CVE","CYP","CZK","DJF","DKK","DOP","DZD","ECS","EEK","EGP","ETB","EUR","FJD","GBP","GEL","GGP","GHS","GIP","GMD","GNF","GTQ","GYD","HKD","HNL","HRK","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LTL","LVL","LYD","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRO","MTL","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG","QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SKK","SLL","SOS","SRD","STD","SVC","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS","UAH","UGX","USD","UYU","UZS","VEF","VND","VUV","XAF","XCD","XOF","XPF","XPF","YER","ZAR","ZMK","ZWD"};
 
         for (int i = 0; i < currencies.length -1; i += 2) {
 //        for (int i = 0; i < 1; i += 2) {
-            showDccScreenInternal(currencies[i], currencies[i+1]);
+            //showDccScreenInternal(currencies[i], currencies[i+1]);
+            showDccScreenInternal("USD", "JPY");
             try {
                 Thread.sleep(500L);
             } catch (InterruptedException e) {
@@ -595,12 +625,12 @@ public class SecondScreenServiceV2Activity extends Activity {
         ex.setTxnAmount(10000L);
         ex.setTxnCurrency(txnCurrency);
 
-        ex.setRate(367326L);
-        ex.setRatePrecision(5L); // basically the rate above is 3.67326
+        ex.setRate(10739L);
+        ex.setRatePrecision(2L); // basically the rate above is 3.67326
 
         ex.setCardCurrency(cardCurrency);
         ex.setMarkupPercentage("250"); // shows the markup in the UI
-        ex.setCardAmount(37651L);
+        ex.setCardAmount(10738L);
 
         Bundle options = new Bundle();
         options.putString(Intents.EXTRA_DCC_DISCLAIMER,

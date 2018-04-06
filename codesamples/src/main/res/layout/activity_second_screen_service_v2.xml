@@ -78,4 +78,11 @@
         android:text="Show DCC"
         android:textAlignment="center" />
 
+    <Button
+        android:id="@+id/showInstallmentsBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show Installments"
+        android:textAlignment="center" />
+
 </LinearLayout>
