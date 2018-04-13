@@ -20,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -73,6 +74,8 @@ public class PaymentActivity extends Activity {
     Type transactionType = new TypeToken<Transaction>() {
     }.getType();
 
+    private Transaction lastCashTransaction;
+
     Button chargeBtn;
     Button payOrderBtn;
     Button launchRegisterBtn;
@@ -80,6 +83,7 @@ public class PaymentActivity extends Activity {
     Button createCashTxnBtn;
     Button createCheckTxnBtn;
     Button captureAllBtn;
+    Button refundCashTxnBtn;
     TextView orderSavedStatus;
 
     private Gson gson;
@@ -203,6 +207,13 @@ public class PaymentActivity extends Activity {
                         public void onResponse(Transaction transaction, String s, PoyntError poyntError) throws RemoteException {
                             if (transaction !=null) {
                                 logData(gson.toJson(transaction, transactionType));
+                                lastCashTransaction = transaction;
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        refundCashTxnBtn.setVisibility(View.VISIBLE);
+                                    }
+                                });
                             }else {
                                 Log.d(TAG, "onResponse: error: " + poyntError);
                             }
@@ -331,6 +342,52 @@ public class PaymentActivity extends Activity {
             }
         });
 */
+        refundCashTxnBtn = (Button) findViewById(R.id.refundCashTxnBtn);
+        refundCashTxnBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (lastCashTransaction != null){
+                    final Transaction refundTransaction = new Transaction();
+                    // full refund
+                    refundTransaction.setAmounts(lastCashTransaction.getAmounts());
+                    refundTransaction.setAction(TransactionAction.REFUND);
+                    refundTransaction.setFundingSource(lastCashTransaction.getFundingSource());
+                    refundTransaction.setParentId(lastCashTransaction.getId());
+                    refundTransaction.setReferences(lastCashTransaction.getReferences());
+                    ClientContext ctx = new ClientContext();
+                    ctx.setBusinessId(lastCashTransaction.getContext().getBusinessId());
+                    refundTransaction.setContext(ctx);
+                    try {
+                        mTransactionService.processTransaction(refundTransaction, UUID.randomUUID().toString(), new IPoyntTransactionServiceListener.Stub() {
+                            @Override
+                            public void onResponse(Transaction transaction, String s, PoyntError poyntError) throws RemoteException {
+                                if (transaction!=null){
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(PaymentActivity.this, "Refund complete", Toast.LENGTH_SHORT).show();
+                                            refundCashTxnBtn.setVisibility(View.INVISIBLE);
+                                        }
+                                    });
+                                }
+                            }
+
+                            @Override
+                            public void onLoginRequired() throws RemoteException {
+
+                            }
+
+                            @Override
+                            public void onLaunchActivity(Intent intent, String s) throws RemoteException {
+
+                            }
+                        });
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
     }
 
     private void doZeroDollarAuth() {

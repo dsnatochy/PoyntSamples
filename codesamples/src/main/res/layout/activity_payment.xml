@@ -47,11 +47,22 @@
         android:text="$0 Auth"
         android:id="@+id/zeroDollarAuthBtn"/>
 
-    <Button
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/createCashTxnBtn"
-        android:text="Record Cash Transaction"/>
+        android:orientation="horizontal">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/createCashTxnBtn"
+            android:text="Record Cash Transaction"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/refundCashTxnBtn"
+            android:text="Refund Cash Transaction"
+            android:visibility="invisible"/>
+    </LinearLayout>
 
     <Button
         android:layout_width="wrap_content"
