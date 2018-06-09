@@ -2,14 +2,17 @@ package co.poynt.samples.codesamples;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
@@ -61,15 +64,31 @@ public class PaymentActivity extends Activity {
     Button payOrderBtn;
     Button launchRegisterBtn;
     Button zeroDollarAuthBtn;
+    Button creditBtn;
 
     private Gson gson;
 
     String lastReferenceId;
 
 
+    private class MyBR extends BroadcastReceiver{
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "RECEIVED!!!!: " + intent.getAction());
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        getApplicationContext().registerReceiver(new MyBR(), new IntentFilter("poynt.intent.action.CANCEL_PAYMENT_FRAGMENT"));
+    }
+
     /*
-     * Class for interacting with the OrderService
-     */
+         * Class for interacting with the OrderService
+         */
     private ServiceConnection mOrderServiceConnection = new ServiceConnection() {
         // Called when the connection with the service is established
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -152,6 +171,20 @@ public class PaymentActivity extends Activity {
             }
         });
 
+        creditBtn = (Button) findViewById(R.id.creditBtn);
+        creditBtn.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+                Payment p = new Payment();
+                p.setCurrency("USD");
+                p.setNonReferencedCredit(true);
+                p.setAmount(1000L);
+                Intent collectPaymentIntent = new Intent(Intents.ACTION_COLLECT_PAYMENT);
+                collectPaymentIntent.putExtra(Intents.INTENT_EXTRAS_PAYMENT, p);
+                startActivityForResult(collectPaymentIntent, ZERO_DOLLAR_AUTH_REQUEST);
+            }
+        });
 /*
 
         launchRegisterBtn = (Button) findViewById(R.id.launchRegisterBtn);
@@ -314,7 +347,7 @@ public class PaymentActivity extends Activity {
             payment.setAmount(order.getAmounts().getNetTotal());
         } else {
             // some random amount
-            payment.setAmount(1200l);
+            payment.setAmount(10000l);
 
             // here's how tip can be disabled for tip enabled merchants
             // payment.setDisableTip(true);
@@ -323,8 +356,21 @@ public class PaymentActivity extends Activity {
         // start Payment activity for result
         try {
             Intent collectPaymentIntent = new Intent(Intents.ACTION_COLLECT_PAYMENT);
+//            Intent collectPaymentIntent = new Intent(Intents.ACTION_COLLECT_MULTI_TENDER_PAYMENT);
             collectPaymentIntent.putExtra(Intents.INTENT_EXTRAS_PAYMENT, payment);
             startActivityForResult(collectPaymentIntent, COLLECT_PAYMENT_REQUEST);
+
+//            Handler h = new Handler(getMainLooper());
+//            h.postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+//                    Intent i = new Intent("poynt.intent.action.CANCEL_PAYMENT_FRAGMENT");
+//                    i.putExtra("CALLER_PACKAGE_NAME", PaymentActivity.this.getPackageName());
+//                    i.setPackage(Intents.POYNT_SERVICES_PKG);
+//                    sendBroadcast(i);
+//                    Log.d(TAG, "sending broadcast: " + i);
+//                }
+//            },5000L);
         } catch (ActivityNotFoundException ex) {
             Log.e(TAG, "Poynt Payment Activity not found - did you install PoyntServices?", ex);
         }

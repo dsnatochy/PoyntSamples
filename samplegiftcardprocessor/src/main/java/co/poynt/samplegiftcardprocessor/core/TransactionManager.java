@@ -178,8 +178,15 @@ public class TransactionManager {
 
             } else {
                 processorResponse.setStatusCode("200");
-                processorResponse.setApprovedAmount(transaction.getAmounts().getTransactionAmount());
+//                adding tip
+                long tipAmount = 200L;
+                long txnAmount = transaction.getAmounts().getTransactionAmount() + tipAmount;
+                processorResponse.setApprovedAmount(txnAmount);
                 processorResponse.setStatusMessage("Approved");
+                transaction.getAmounts().setOrderAmount(transaction.getAmounts().getTransactionAmount());
+                transaction.getAmounts().setTransactionAmount(txnAmount);
+                transaction.getAmounts().setTipAmount(tipAmount);
+
 //            ProviderVerification providerVerification = new ProviderVerification();
 //            providerVerification.setSignature("1234");
 //            providerVerification.setPublicKeyHash("ABCD");

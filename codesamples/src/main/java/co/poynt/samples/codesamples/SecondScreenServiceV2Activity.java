@@ -39,6 +39,7 @@ import co.poynt.api.model.ExchangeRate;
 import co.poynt.api.model.Fee;
 import co.poynt.api.model.OrderItem;
 import co.poynt.api.model.TransactionAmounts;
+import co.poynt.os.model.InstallmentsOption;
 import co.poynt.os.model.Intents;
 import co.poynt.os.model.ReceiptOption;
 import co.poynt.os.model.ReceiptType;
@@ -76,6 +77,9 @@ public class SecondScreenServiceV2Activity extends Activity {
 
     @Bind(R.id.showInstallmentsBtn)
     Button showInstallmentsBtn;
+
+    @Bind(R.id.showInstallmentsBtn2)
+    Button showInstallmentsBtn2;
 
     private IPoyntSecondScreenService secondScreenService;
 
@@ -581,12 +585,161 @@ public class SecondScreenServiceV2Activity extends Activity {
     @OnClick(R.id.showInstallmentsBtn)
     public void showInstallments(){
         //String json = "{ \"backgroundColor\":\"#FFFFFF\", \"title\":{ \"label\": \"Select Payment Option\", \"textColor\": \"#0000FF\", \"fontSize\": 22 }, \"options\":[ { \"id\":\"mainOption\", \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"One-time\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"AED 3600\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option2\", \"width\":200, \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"3 mo\\nAED 1200\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"0% Interest\\n1% + AED 20\\nAmt AED 50\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option3\", \"width\":200, \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"6 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option4\", \"width\":400, \"backgroundColor\": \"#0000FF\", \"title\":{ \"label\": \"9 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 22 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FF0000\", \"fontSize\": 20 } } ] }jjj";
-        String json = "{ \"backgroundColor\":\"#FFFFFF\", \"title\":{ \"label\": \"Select Payment Option\", \"textColor\": \"#0A46ED\", \"fontSize\": 32 }, \"options\":[ { \"id\":\"mainOption\", \"backgroundColor\": \"#74BA59\", \"title\":{ \"label\": \"One-time\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"AED 3600\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option2\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"3 mo\\nAED 1200\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n1% + AED 20\\nAmt AED 50\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option3\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"6 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option4\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"9 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FF0000\", \"fontSize\": 20 } } ] }jjj";
+        //String json = "{ \"backgroundColor\":\"#FFFFFF\", \"title\":{ \"label\": \"Select Payment Option\", \"textColor\": \"#0A46ED\", \"fontSize\": 32 }, \"options\":[ { \"id\":\"mainOption\", \"backgroundColor\": \"#74BA59\", \"title\":{ \"label\": \"One-time\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"AED 3600\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option2\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"3 mo\\nAED 1200\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n1% + AED 20\\nAmt AED 50\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option3\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"6 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FFFFFF\", \"fontSize\": 20 } }, { \"id\":\"option4\", \"width\":240, \"backgroundColor\": \"#0F3D7F\", \"title\":{ \"label\": \"9 mo\\nAED 620\", \"textColor\": \"#FFFFFF\", \"fontSize\": 29 }, \"subTitle\":{ \"label\": \"0% Interest\\n2% + AED 20\\nAmt AED 100\", \"textColor\": \"#FF0000\", \"fontSize\": 20 } } ] }jjj";
+
+        /*
+            EXTRA_TITLE
+            EXTRA_BACKGROUND_COLOR
+            EXTRA_FONT_COLOR
+            EXTRA_FONT_SIZE
+         */
+        Bundle options = new Bundle();
+        //options.putString(Intents.EXTRA_INSTALLMENT_CONFIG, json);
+        //options.putString(Intents.EXTRA_TITLE, "Satya, do it!");
+        //options.putString(Intents.EXTRA_BACKGROUND_COLOR, "#0000FF");
+        //options.putString(Intents.EXTRA_FONT_SIZE, "23");
+        options.putString(Intents.EXTRA_FONT_COLOR, "#0A46ED");
+
+
+        List<InstallmentsOption> installmentsOptions = new ArrayList<>();
+
+        InstallmentsOption mainOption = new InstallmentsOption();
+       // mainOption.setBackgroundColor("#000000");
+        //mainOption.setTitleColor("#FFFFFF");
+        mainOption.setId("mainOption");
+        mainOption.setTitleText("Pay in Full - $100");
+        mainOption.setSubTitleText("The best option");
+        //mainOption.setTitleFontSize(23f);
+        installmentsOptions.add(mainOption);
+
+        InstallmentsOption option2 = new InstallmentsOption();
+        //option2.setBackgroundColor("#000000");
+        //option2.setTitleColor("#FFFFFF");
+        option2.setTitleFontSize(23f);
+        option2.setWidth(300);
+        option2.setId("option2");
+        option2.setTitleText("3 easy installments of $40");
+        option2.setSubTitleColor("#FFFFFF");
+        option2.setSubTitleText("Fine print goes here...");
+        installmentsOptions.add(option2);
+
+        InstallmentsOption option3 = new InstallmentsOption();
+        //option2.setBackgroundColor("#000000");
+        //option2.setTitleColor("#FFFFFF");
+        option3.setTitleFontSize(23f);
+        option3.setWidth(300);
+        option3.setId("option3");
+        option3.setTitleText("5 Easy Installments of $30");
+        option3.setSubTitleColor("#FFFFFF");
+        option3.setSubTitleText("Fine print goes here...");
+        installmentsOptions.add(option3);
+
+        InstallmentsOption option4 = new InstallmentsOption();
+        //option2.setBackgroundColor("#000000");
+        //option2.setTitleColor("#FFFFFF");
+        option4.setTitleFontSize(23f);
+        option4.setWidth(300);
+        option4.setId("option4");
+        option4.setTitleText("10 Installments of $15");
+        option4.setSubTitleColor("#FFFFFF");
+        option4.setSubTitleText("Fine print goes here...");
+        installmentsOptions.add(option4);
+
+        InstallmentsOption option5 = new InstallmentsOption();
+        //option2.setBackgroundColor("#000000");
+        //option2.setTitleColor("#FFFFFF");
+        option5.setTitleFontSize(23f);
+        option5.setWidth(300);
+        option5.setId("option5");
+        option5.setTitleText("20 Installments of $7");
+        option5.setSubTitleColor("#CCCCCC");
+        option5.setSubTitleText("Fine print goes here...");
+        installmentsOptions.add(option5);
+
+
+        try {
+            secondScreenService.captureInstallmentOption(options, installmentsOptions, new IPoyntInstallmentPlanListener.Stub() {
+                @Override
+                public void onOptionSelection(String s) throws RemoteException {
+                    Log.d(TAG, "onOptionSelection: " + s);
+                    secondScreenService.displayMessage("You've selected option: " + s,  null);
+                }
+
+                @Override
+                public void onError(String s) throws RemoteException {
+                    Log.e(TAG, "onError: " + s);
+                }
+            });
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @OnClick(R.id.showInstallmentsBtn2)
+    public void showInstallments2(){
+
+        String RED = "#FF0000";
+        String BLUE = "#0000FF";
+        String GREEN = "#00FF00";
+        String YELLOW = "#EEEE00";
+        String BLACK = "#000000";
+        String WHITE = "#FFFFFF";
 
         Bundle options = new Bundle();
-        options.putString(Intents.EXTRA_INSTALLMENT_CONFIG, json);
+        //options.putString(Intents.EXTRA_INSTALLMENT_CONFIG, json);
+        options.putString(Intents.EXTRA_TITLE, "Выбирите форму платежа");
+        options.putString(Intents.EXTRA_BACKGROUND_COLOR, YELLOW);
+        //options.putString(Intents.EXTRA_FONT_SIZE, "23");
+        options.putString(Intents.EXTRA_FONT_COLOR, BLACK);
+
+
+        List<InstallmentsOption> installmentsOptions = new ArrayList<>();
+
+        InstallmentsOption mainOption = new InstallmentsOption();
+        mainOption.setBackgroundColor(BLACK);
+        mainOption.setTitleColor(YELLOW);
+        mainOption.setId("mainOption");
+        mainOption.setTitleText("Pay in Full - $100");
+        mainOption.setSubTitleText("The best option");
+        //mainOption.setTitleFontSize(23f);
+        installmentsOptions.add(mainOption);
+
+        InstallmentsOption option2 = new InstallmentsOption();
+        option2.setBackgroundColor("#000000");
+        option2.setTitleColor(YELLOW);
+        option2.setTitleFontSize(23f);
+        option2.setWidth(200);
+        option2.setId("option2");
+        option2.setTitleText("Option2");
+        option2.setSubTitleColor("#ffffe0");
+        option2.setSubTitleText("Fine print goes here...");
+        installmentsOptions.add(option2);
+
+        InstallmentsOption option3 = new InstallmentsOption();
+        option3.setBackgroundColor(BLACK);
+        option3.setTitleColor(YELLOW);
+        option3.setTitleFontSize(23f);
+        option3.setWidth(300);
+        option3.setId("option3");
+        option3.setTitleText("5 Easy Installments of $30");
+        option3.setSubTitleColor("#CCCCCC");
+        option3.setSubTitleText("Fine print goes here...");
+        installmentsOptions.add(option3);
+
+        InstallmentsOption option4 = new InstallmentsOption();
+        option4.setBackgroundColor(BLACK);
+        option4.setTitleColor(YELLOW);
+        option4.setTitleFontSize(23f);
+        option4.setWidth(200);
+        option4.setId("option4");
+        option4.setTitleText("10 Installments of $15");
+        option4.setSubTitleColor("#CCCCCC");
+        option4.setSubTitleText("Fine print goes here...");
+        installmentsOptions.add(option4);
+
+
         try {
-            secondScreenService.captureInstallmentOption(options, new IPoyntInstallmentPlanListener.Stub() {
+            secondScreenService.captureInstallmentOption(options, installmentsOptions, new IPoyntInstallmentPlanListener.Stub() {
                 @Override
                 public void onOptionSelection(String s) throws RemoteException {
                     Log.d(TAG, "onOptionSelection: " + s);
