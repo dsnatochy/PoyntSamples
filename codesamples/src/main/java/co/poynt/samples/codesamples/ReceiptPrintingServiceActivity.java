@@ -3,7 +3,6 @@ package co.poynt.samples.codesamples;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,6 +13,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +33,9 @@ public class ReceiptPrintingServiceActivity extends Activity {
     private final static String TAG = "ReceiptPrintingActivity";
     @Bind(R.id.printImageBtn) Button printImageBtn;
     @Bind(R.id.printReceiptBtn) Button printReceiptBtn;
+    @Bind(R.id.getReceipt) Button getReceiptBtn;
+    @Bind(R.id.console) TextView console;
+
 
 
     private IPoyntReceiptPrintingService receiptPrintingService;
@@ -76,6 +79,7 @@ public class ReceiptPrintingServiceActivity extends Activity {
         super.onStart();
         bindService(Intents.getComponentIntent(Intents.COMPONENT_POYNT_RECEIPT_PRINTING_SERVICE),
                 receiptServiceConnection, Context.BIND_AUTO_CREATE);
+
     }
 
     @Override
@@ -191,5 +195,10 @@ public class ReceiptPrintingServiceActivity extends Activity {
         PrintedReceiptLine line = new PrintedReceiptLine();
         line.setText(s);
         return line;
+    }
+
+    @OnClick(R.id.getReceipt)
+    public void getReceipt(){
+
     }
 }

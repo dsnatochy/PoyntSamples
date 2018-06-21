@@ -44,8 +44,11 @@ import co.poynt.os.model.Intents;
 import co.poynt.os.model.Payment;
 import co.poynt.os.model.PaymentStatus;
 import co.poynt.os.model.PoyntError;
+import co.poynt.os.model.PrintedReceiptV2;
 import co.poynt.os.services.v1.IPoyntOrderService;
 import co.poynt.os.services.v1.IPoyntOrderServiceListener;
+import co.poynt.os.services.v1.IPoyntReceiptPrintingService;
+import co.poynt.os.services.v1.IPoyntReceiptPrintingServiceGenReceiptListener;
 import co.poynt.os.services.v1.IPoyntTransactionService;
 import co.poynt.os.services.v1.IPoyntTransactionServiceListener;
 import co.poynt.samples.codesamples.utils.Util;
@@ -186,10 +189,10 @@ public class PaymentActivity extends Activity {
                 h.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        Intent intent = new Intent(Intents.ACTION_CANCEL_PAYMENT_FRAGMENT);
-                        // Only the app that started Payment fragment can cancel it.
-                        intent.putExtra(Intents.INTENT_EXTRAS_CALLER_PACKAGE_NAME, getPackageName());
-                        sendBroadcast(intent);
+//                        Intent intent = new Intent(Intents.ACTION_CANCEL_PAYMENT_FRAGMENT);
+//                        // Only the app that started Payment fragment can cancel it.
+//                        intent.putExtra(Intents.INTENT_EXTRAS_CALLER_PACKAGE_NAME, getPackageName());
+//                        sendBroadcast(intent);
                     }
                 }, 2000L);
 
@@ -284,6 +287,14 @@ public class PaymentActivity extends Activity {
                 mOrderServiceConnection, Context.BIND_AUTO_CREATE);
         bindService(Intents.getComponentIntent(Intents.COMPONENT_POYNT_TRANSACTION_SERVICE),
                 mTransactionServiceConnection, Context.BIND_AUTO_CREATE);
+
+        // connect to Nexi receipt service
+        String nexiPkg = "co.nexi";
+        String nexiClass = "co.nexi.poyntservice.TransactionReceiptService";
+        ComponentName nexiComp = new ComponentName(nexiPkg, nexiClass);
+        Intent intent = new Intent();
+        intent.setComponent(nexiComp);
+        bindService(intent, nexiReceiptConnection, BIND_AUTO_CREATE);
     }
 
     @Override
@@ -295,6 +306,7 @@ public class PaymentActivity extends Activity {
     private void unbindServices() {
         unbindService(mOrderServiceConnection);
         unbindService(mTransactionServiceConnection);
+        unbindService(nexiReceiptConnection);
     }
 
     private class SaveOrderTask extends AsyncTask<Order, Void, Void> {
@@ -434,6 +446,21 @@ public class PaymentActivity extends Activity {
 
     }
 
+    IPoyntReceiptPrintingService nexiReceiptService;
+    private ServiceConnection nexiReceiptConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            nexiReceiptService = IPoyntReceiptPrintingService.Stub.asInterface(service);
+            Log.d(TAG, "onServiceConnected: nexiReceipt");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            nexiReceiptService = null;
+            Log.d(TAG, "onServiceDisconnected: nexiReceipt");
+        }
+    };
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -452,18 +479,36 @@ public class PaymentActivity extends Activity {
                             new SaveOrderTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, payment.getOrder());
                         }
 
-//                      Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                        Gson gson = new Gson();
-//                        Type paymentType = new TypeToken<Payment>() {
-//                        }.getType();
-//                        Log.d(TAG, gson.toJson(payment, paymentType));
+                        final Gson gson = new Gson();
                         Log.d(TAG, "onActivityResult: " + payment.getTransactions().get(0));
-                        for (Transaction t : payment.getTransactions()) {
-                            Type txnType = new TypeToken<Transaction>() {
-                            }.getType();
+                        for (final Transaction t : payment.getTransactions()) {
+                            Type txnType = new TypeToken<Transaction>(){}.getType();
                             Log.d(TAG, "onActivityResult: transaction: " + gson.toJson(t, txnType));
 
-                            getTransaction(t.getId().toString());
+
+                            Bundle bundle = new Bundle();
+                            bundle.putString("TRANSACTION", gson.toJson(t, txnType));
+//                            // if tip was added after the transaction
+//                            if(payment.getTipAmounts() != null && payment.getTipAmounts().get(t.getId())!= null){
+//                                bundle.putLong("TIP_AMOUNT", (Long)payment.getTipAmounts().get(t.getId()));
+//                            }
+                            try {
+                                nexiReceiptService.generateReceipt(bundle, new IPoyntReceiptPrintingServiceGenReceiptListener.Stub() {
+                                    @Override
+                                    public void onReceiptGenerated(PrintedReceiptV2 printedReceiptV2, PoyntError poyntError) throws RemoteException {
+                                        if (printedReceiptV2 != null) {
+                                            Type receiptType = new TypeToken<PrintedReceiptV2>(){}.getType();
+                                            Log.d(TAG, "onReceiptGenerated: " + gson.toJson(printedReceiptV2, receiptType));
+                                        }else{
+                                            Log.d(TAG, "onReceiptGenerated: " + poyntError);
+                                        }
+                                    }
+                                });
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+
+
                             //Log.d(TAG, "Card token: " + t.getProcessorResponse().getCardToken());
                             FundingSourceAccountType fsAccountType = t.getFundingSource().getAccountType();
                             if (t.getFundingSource().getCard() != null) {
