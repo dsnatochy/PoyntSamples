@@ -31,6 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import co.poynt.api.model.AuthorizationList;
+import co.poynt.api.model.AuthorizationListType;
+import co.poynt.api.model.CaptureAllAccepted;
+import co.poynt.api.model.CaptureAllRequest;
+import co.poynt.api.model.CaptureAllResponse;
 import co.poynt.api.model.Card;
 import co.poynt.api.model.CardType;
 import co.poynt.api.model.FundingSourceAccountType;
@@ -46,6 +51,7 @@ import co.poynt.os.model.PaymentStatus;
 import co.poynt.os.model.PoyntError;
 import co.poynt.os.services.v1.IPoyntOrderService;
 import co.poynt.os.services.v1.IPoyntOrderServiceListener;
+import co.poynt.os.services.v1.IPoyntTransactionCaptureAllListener;
 import co.poynt.os.services.v1.IPoyntTransactionService;
 import co.poynt.os.services.v1.IPoyntTransactionServiceListener;
 import co.poynt.samples.codesamples.utils.Util;
@@ -56,6 +62,7 @@ public class PaymentActivity extends Activity {
     private static final int COLLECT_PAYMENT_REQUEST = 13132;
     private static final int ZERO_DOLLAR_AUTH_REQUEST = 13133;
     private static final int COLLECT_PAYMENT_REFS_REQUEST = 13134;
+    private static final int COLLECT_PAYMENT_FOR_SETTLEMENT_TEST_REQUEST = 13135;
     private static final String TAG = PaymentActivity.class.getSimpleName();
 
     private IPoyntTransactionService mTransactionService;
@@ -73,6 +80,10 @@ public class PaymentActivity extends Activity {
     private Gson gson;
 
     String lastReferenceId;
+
+    List <UUID> transactionsToSettle;
+    Button testSettleBtn;
+    TextView testSettleResult;
 
 
     /*
@@ -230,7 +241,32 @@ public class PaymentActivity extends Activity {
             }
         });
 */
+
+        testSettleResult = (TextView) findViewById(R.id.testSettleStatus);
+        testSettleBtn = (Button) findViewById(R.id.testSettleBtn);
+
+        testSettleBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                transactionsToSettle = null;
+                doSimplePayment();
+            }
+        });
+
     }
+
+    private void doSimplePayment(){
+        Payment payment = new Payment();
+        payment.setCurrency("USD");
+        payment.setAmount(1000l);
+        payment.setSkipSignatureScreen(true);
+        payment.setDisableTip(true);
+        payment.setSkipReceiptScreen(true);
+        Intent collectPaymentIntent = new Intent(Intents.ACTION_COLLECT_PAYMENT);
+        collectPaymentIntent.putExtra(Intents.INTENT_EXTRAS_PAYMENT, payment);
+        startActivityForResult(collectPaymentIntent, COLLECT_PAYMENT_FOR_SETTLEMENT_TEST_REQUEST);
+    }
+
     private void paymentWithCustomRefs(){
         Payment payment = new Payment();
         payment.setCurrency("USD");
@@ -536,6 +572,59 @@ public class PaymentActivity extends Activity {
                 }
             }
 
+        } else if (requestCode == COLLECT_PAYMENT_FOR_SETTLEMENT_TEST_REQUEST){
+            Log.d(TAG, "onActivityResult: Payment for settlement test");
+            if(resultCode == Activity.RESULT_OK){
+                if(data!=null){
+                    Payment payment = data.getParcelableExtra(Intents.INTENT_EXTRAS_PAYMENT);
+                    if(payment!=null && payment.getTransactions()!=null) {
+                        if (transactionsToSettle == null) {
+                            transactionsToSettle = new ArrayList<>();
+                        }
+                    }
+                    transactionsToSettle.add(payment.getTransactions().get(0).getId());
+                    if (transactionsToSettle.size() < 2){
+                        doSimplePayment();
+                    }else{
+                        Bundle options = null;
+//                        Bundle options = new Bundle();
+//                        options.putString(Intents.EXTRA_INCLUDE_AUTHONLY, "true");
+//                        options.putString(Intents.EXTRA_ALL_TIDS, "true");
+                        final CaptureAllRequest captureAllRequest = new CaptureAllRequest();
+                        // PoyntServices sets the `tid` unless options.allTIDs == true in which case it's not needed
+                        // captureAllRequest.setTid("124"); // P61SWT235FS000589
+                        // PoyntServices also sets `storeId`
+                        AuthorizationList includeList = new AuthorizationList();
+                        includeList.setType(AuthorizationListType.INCLUSION);
+                        includeList.setIds(transactionsToSettle);
+                        captureAllRequest.setIncludeExcludeList(includeList);
+                        try {
+                            mTransactionService.captureAllTransactionsWithOptions(UUID.randomUUID().toString(),
+                                    options, captureAllRequest, new IPoyntTransactionCaptureAllListener.Stub() {
+                                        @Override
+                                        public void onResponse(String s, CaptureAllResponse captureAllResponse, PoyntError poyntError) throws RemoteException {
+                                            if (captureAllResponse != null){
+                                                List<UUID> acceptedAuths = new ArrayList<>();
+                                                for (CaptureAllAccepted list : captureAllResponse.getAcceptedList()){
+                                                    acceptedAuths.add(list.getAuthTransactionId());
+                                                }
+                                                if (acceptedAuths.containsAll(transactionsToSettle)){
+                                                    setStatus(testSettleResult, "SUCCESS");
+                                                }else {
+                                                    setStatus(testSettleResult, "FAILURE");
+                                                }
+                                            }else{
+                                                setStatus(testSettleResult, "FAILURE");
+                                                logData(poyntError.toString());
+                                            }
+                                        }
+                                    });
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -573,6 +662,15 @@ public class PaymentActivity extends Activity {
 
     public void logData(final String data) {
         Log.d(TAG, data);
+    }
+
+    private void setStatus(final TextView view, final String msg){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                view.setText(msg);
+            }
+        });
     }
 
 }

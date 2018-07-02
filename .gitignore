@@ -6,5 +6,6 @@
 /build
 /*.iml
 .idea/*
+.idea/runConfigurations.xml
 app/app.iml
 */*.iml
