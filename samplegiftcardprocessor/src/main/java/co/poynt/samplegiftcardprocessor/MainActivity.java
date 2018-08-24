@@ -124,7 +124,9 @@ public class MainActivity extends AppCompatActivity {
         String referenceId = UUID.randomUUID().toString();
         payment.setReferenceId(referenceId);
         payment.setCurrency(currencyCode);
-        payment.setReadCardDataOnly(true);
+        payment.setAmount(10000L);
+        //HACK to suppress tip screen after transaction which does not happen in live
+        payment.setDisableTip(true);
 
         // start Payment activity for result
         try {

@@ -23,14 +23,15 @@
             android:id="@+id/readCardBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ReadCard"
+            android:text="AliPay"
             android:visibility="visible" />
 
         <Button
             android:id="@+id/set_bin_range"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Set Custom BIN Range" />
+            android:text="Set Custom BIN Range"
+            android:visibility="gone"/>
 
     </LinearLayout>
 

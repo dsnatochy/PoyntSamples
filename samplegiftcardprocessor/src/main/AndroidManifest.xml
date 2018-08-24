@@ -6,6 +6,7 @@
     <uses-permission android:name="poynt.permission.CONFIGURATION_SERVICE" />
     <uses-permission android:name="co.poynt.business.ACCESS_BUSINESS" />
     <uses-permission android:name="poynt.permission.SECOND_SCREEN_SERVICE" />
+    <uses-permission android:name="poynt.permission.BUSINESS_SERVICE" />
 
     <application
         android:name=".SampleGiftcardTransactionProcessorApplication"

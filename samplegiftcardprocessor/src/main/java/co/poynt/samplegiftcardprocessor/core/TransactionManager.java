@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -18,9 +19,16 @@ import java.util.Map;
 import java.util.UUID;
 
 import co.poynt.api.model.AdjustTransactionRequest;
+import co.poynt.api.model.Business;
+import co.poynt.api.model.Card;
+import co.poynt.api.model.CardType;
 import co.poynt.api.model.CustomFundingSource;
 import co.poynt.api.model.CustomFundingSourceType;
+import co.poynt.api.model.CustomerPresenceStatus;
 import co.poynt.api.model.EMVData;
+import co.poynt.api.model.EntryMode;
+import co.poynt.api.model.FinancialInstrumentStatus;
+import co.poynt.api.model.FundingSourceEntryDetails;
 import co.poynt.api.model.FundingSourceType;
 import co.poynt.api.model.Processor;
 import co.poynt.api.model.ProcessorResponse;
@@ -35,6 +43,7 @@ import co.poynt.os.model.Intents;
 import co.poynt.os.model.PoyntError;
 import co.poynt.os.services.v1.IPoyntSecurityService;
 import co.poynt.os.services.v1.IPoyntTransactionServiceListener;
+import co.poynt.samplegiftcardprocessor.SampleGiftcardTransactionProcessorApplication;
 
 /**
  * Created by palavilli on 11/29/15.
@@ -235,54 +244,60 @@ public class TransactionManager {
             transaction.setUpdatedAt(Calendar.getInstance());
         }
 
+        Business business = SampleGiftcardTransactionProcessorApplication.getInstance().getBusiness();
 
         ProcessorResponse processorResponse = new ProcessorResponse();
-        processorResponse.setProcessor(Processor.CREDITCALL);
-        processorResponse.setAcquirer(Processor.CHASE_PAYMENTECH);
+        processorResponse.setProcessor(business.getProcessor());
+        processorResponse.setAcquirer(business.getAcquirer());
+        processorResponse.setApprovedAmount(transaction.getAmounts().getTransactionAmount());
+        processorResponse.setStatus(ProcessorStatus.Successful);
+        processorResponse.setStatusCode("AA");
+        processorResponse.setStatusMessage("APPROVAL");
+        processorResponse.setTransactionId("12345677");
+        processorResponse.setBatchId("10");
+
+
         // based on action handle the transactions
         if (transaction.getAction() == TransactionAction.AUTHORIZE
                 || transaction.getAction() == TransactionAction.SALE) {
             transaction.setStatus(TransactionStatus.CAPTURED);
 
-            setProcessorTransactionId(transaction, processorResponse);
+//            setProcessorTransactionId(transaction, processorResponse);
 
-            transaction.getFundingSource().setType(FundingSourceType.CUSTOM_FUNDING_SOURCE);
+            transaction.getFundingSource().setType(FundingSourceType.CREDIT_DEBIT);
+
+            Card card  = new Card();
+            card.setType(CardType.ALIPAY);
+            card.setStatus(FinancialInstrumentStatus.ACTIVE);
+            card.setExpirationMonth(8);
+            card.setExpirationYear(2018);
+            card.setNumberFirst6("601111");
+            card.setNumberLast4("7777");
+            card.setIssuer("MARQETA");
+            card.setCardId(UUID.randomUUID());
+            card.setId(1233423423134213234L);
+
+            transaction.getFundingSource().setCard(card);
+
+
+
+
             CustomFundingSource customFundingSource = transaction.getFundingSource().getCustomFundingSource();
-            if (customFundingSource == null) {
-                customFundingSource = new CustomFundingSource();
-                customFundingSource.setType(CustomFundingSourceType.GIFT_CARD);
-            }
-            customFundingSource.setName("Starbucks");
-            customFundingSource.setAccountId("1234567890");
-            customFundingSource.setProcessor("co.poynt.samplegiftcardprocessor");
-            customFundingSource.setProvider("Sage");
-            customFundingSource.setDescription("Starbucks giftcard");
+
+            customFundingSource.setType(CustomFundingSourceType.ALIPAY);
+            customFundingSource.setProvider("ALIPAY");
+            customFundingSource.setProcessor("co.poynt.services");
+            customFundingSource.setAccountId("347493457928742837");
             transaction.getFundingSource().setCustomFundingSource(customFundingSource);
 
-            processorResponse.setStatus(ProcessorStatus.Successful);
-            processorResponse.setApprovalCode("123456");
-            if (transaction.getAmounts().getTransactionAmount() == 5555l) {
-                processorResponse.setStatus(ProcessorStatus.Successful);
-                processorResponse.setApprovedAmount(100l);
-                transaction.getAmounts().setTransactionAmount(100l);
-                transaction.getAmounts().setOrderAmount(100l);
-                processorResponse.setStatusMessage("Partially Approved");
-                processorResponse.setStatusCode("300");
-            } else {
-                processorResponse.setStatusCode("200");
-                processorResponse.setApprovedAmount(transaction.getAmounts().getTransactionAmount());
-                processorResponse.setStatusMessage("Approved");
-//            ProviderVerification providerVerification = new ProviderVerification();
-//            providerVerification.setSignature("1234");
-//            providerVerification.setPublicKeyHash("ABCD");
-//            processorResponse.setProviderVerification(providerVerification);
-            }
-            if (transaction.getAction() == TransactionAction.AUTHORIZE) {
-                transaction.setStatus(TransactionStatus.AUTHORIZED);
-            } else {
-                transaction.setStatus(TransactionStatus.CAPTURED);
-            }
-            transaction.setProcessorResponse(processorResponse);
+
+            FundingSourceEntryDetails entryDetails = new FundingSourceEntryDetails();
+            entryDetails.setCustomerPresenceStatus(CustomerPresenceStatus.PRESENT);
+            entryDetails.setEntryMode(EntryMode.KEYED);
+            transaction.getFundingSource().setEntryDetails(entryDetails);
+
+
+
 
         } else if (transaction.getAction() == TransactionAction.REFUND) {
             // add processor response

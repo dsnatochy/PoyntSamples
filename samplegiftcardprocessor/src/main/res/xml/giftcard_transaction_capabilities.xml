@@ -6,7 +6,7 @@
     <type>TRANSACTION</type>
 
     <!-- descriptive name of this capability -->
-    <provider>GIFT CARD</provider>
+    <provider>ALIPAY</provider>
 
     <!-- reserved to future use. This icon will show up on your CUSTOM button in Payment Fragment payment options in the future -->
 
@@ -18,8 +18,6 @@
     <!-- value is a first6 digits of card number also referred to as binrange.
         value >=601056 && value <= 601056 -->
     <!-- for eval expression definition please refer to https://github.com/uklimaschewski/EvalEx -->
-    <entry_method
-        eval="value &lt;= 198000 &amp;&amp; value &gt;=  197000"
-        type="CARDREAD" />
+
     <entry_method type="CUSTOM" />
 </capability>
