@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
     private Button accessoriesActivityBtn;
     private Button cameraActivityBtn;
     private Button nonPaymentCardReaderActivityBtn;
+    private Button contentProviderActivityBtn;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -175,6 +176,16 @@ public class MainActivity extends Activity {
                 startActivity(intent);
             }
         });
+
+        contentProviderActivityBtn = (Button) findViewById(R.id.contentProviderActivityBtn);
+        contentProviderActivityBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, ContentProviderActivity.class);
+                startActivity(intent);
+            }
+        });
+
     }
 
     @Override
