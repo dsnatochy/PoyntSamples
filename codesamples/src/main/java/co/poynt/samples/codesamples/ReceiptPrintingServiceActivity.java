@@ -3,6 +3,7 @@ package co.poynt.samples.codesamples;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,7 +15,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -22,12 +28,18 @@ import java.util.UUID;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import co.poynt.api.model.Transaction;
 import co.poynt.os.model.Intents;
+import co.poynt.os.model.PoyntError;
 import co.poynt.os.model.PrintedReceipt;
 import co.poynt.os.model.PrintedReceiptLine;
+import co.poynt.os.model.PrintedReceiptV2;
 import co.poynt.os.model.PrinterStatus;
 import co.poynt.os.services.v1.IPoyntReceiptPrintingService;
+import co.poynt.os.services.v1.IPoyntReceiptPrintingServiceGenReceiptListener;
 import co.poynt.os.services.v1.IPoyntReceiptPrintingServiceListener;
+import co.poynt.os.services.v1.IPoyntTransactionService;
+import co.poynt.os.services.v1.IPoyntTransactionServiceListener;
 
 public class ReceiptPrintingServiceActivity extends Activity {
     private final static String TAG = "ReceiptPrintingActivity";
@@ -37,6 +49,7 @@ public class ReceiptPrintingServiceActivity extends Activity {
     @Bind(R.id.console) TextView console;
 
 
+    IPoyntTransactionService transactionService;
 
     private IPoyntReceiptPrintingService receiptPrintingService;
     private IPoyntReceiptPrintingServiceListener receiptPrintingServiceListener = new IPoyntReceiptPrintingServiceListener.Stub(){
@@ -49,6 +62,33 @@ public class ReceiptPrintingServiceActivity extends Activity {
             Log.d(TAG, "Receipt printing failed");
         }
     };
+    private ServiceConnection transactionServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            transactionService = IPoyntTransactionService.Stub.asInterface(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            transactionService = null;
+        }
+    };
+
+    IPoyntReceiptPrintingService nexiReceiptService;
+    private ServiceConnection nexiReceiptConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            nexiReceiptService = IPoyntReceiptPrintingService.Stub.asInterface(service);
+            Log.d(TAG, "onServiceConnected: nexiReceipt");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            nexiReceiptService = null;
+            Log.d(TAG, "onServiceDisconnected: nexiReceipt");
+        }
+    };
+
     private ServiceConnection receiptServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -79,13 +119,23 @@ public class ReceiptPrintingServiceActivity extends Activity {
         super.onStart();
         bindService(Intents.getComponentIntent(Intents.COMPONENT_POYNT_RECEIPT_PRINTING_SERVICE),
                 receiptServiceConnection, Context.BIND_AUTO_CREATE);
+        bindService(Intents.getComponentIntent(Intents.COMPONENT_POYNT_TRANSACTION_SERVICE), transactionServiceConnection, BIND_AUTO_CREATE);
 
+        // connect to Nexi receipt service
+        String nexiPkg = "co.nexi";
+        String nexiClass = "co.nexi.poyntservice.TransactionReceiptService";
+        ComponentName nexiComp = new ComponentName(nexiPkg, nexiClass);
+        Intent intent = new Intent();
+        intent.setComponent(nexiComp);
+        bindService(intent, nexiReceiptConnection, BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         unbindService(receiptServiceConnection);
+        unbindService(transactionServiceConnection);
+        unbindService(nexiReceiptConnection);
     }
 
     @Override
@@ -199,6 +249,55 @@ public class ReceiptPrintingServiceActivity extends Activity {
 
     @OnClick(R.id.getReceipt)
     public void getReceipt(){
+        //TODO should check if transactionService is null
+        try {
+            transactionService.getTransaction("40f35692-0166-1000-3741-56a451933b19", UUID.randomUUID().toString(),
+                    new IPoyntTransactionServiceListener.Stub() {
+                        final Gson gson = new Gson();
+                        @Override
+                        public void onResponse(Transaction transaction, String s, PoyntError poyntError) throws RemoteException {
+                            if (transaction != null){
 
+                                Type txnType = new TypeToken<Transaction>(){}.getType();
+
+                                Bundle bundle = new Bundle();
+                                bundle.putString("TRANSACTION", gson.toJson(transaction, txnType));
+                                Log.d(TAG, "TRANSACTION: " + gson.toJson(transaction, txnType));
+
+
+                                nexiReceiptService.generateReceipt(bundle, new IPoyntReceiptPrintingServiceGenReceiptListener.Stub() {
+                                    @Override
+                                    public void onReceiptGenerated(PrintedReceiptV2 printedReceiptV2, PoyntError poyntError) throws RemoteException {
+                                        if (printedReceiptV2 != null) {
+                                            Type receiptType = new TypeToken<PrintedReceiptV2>(){}.getType();
+                                            Log.d(TAG, "onReceiptGenerated: " + gson.toJson(printedReceiptV2, receiptType));
+                                        }else{
+                                            Log.d(TAG, "onReceiptGenerated: " + poyntError);
+                                        }
+                                    }
+                                });
+                            }else{
+                                Type errorType = new TypeToken<PoyntError>(){}.getType();
+                                Log.d(TAG, "onResponse: " + gson.toJson(poyntError, errorType));
+                                Log.d(TAG, "onResponse: " + poyntError);
+                            }
+                        }
+
+                        @Override
+                        public void onLoginRequired() throws RemoteException {
+
+                        }
+
+                        @Override
+                        public void onLaunchActivity(Intent intent, String s) throws RemoteException {
+
+                        }
+
+
+                    });
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 }
