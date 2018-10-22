@@ -15,11 +15,18 @@
         android:layout_height="wrap_content"
         android:text="Pay without Order"
         android:id="@+id/chargeBtn"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Capture"
+        android:id="@+id/captureBtn"
+        android:enabled="false"/>
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
         <Button
             android:id="@+id/payWithRefs"
             android:layout_width="wrap_content"
@@ -39,7 +46,8 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -58,20 +66,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Launch Poynt Txn list"
-        android:id="@+id/launchTxnList" />
+        android:id="@+id/launchTxnList"
+        android:visibility="gone"/>
 
     <!-- TSYS and Elavon only -->
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="$0 Auth"
-        android:id="@+id/zeroDollarAuthBtn"/>
+        android:id="@+id/zeroDollarAuthBtn"
+        android:visibility="gone"/>
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Launch Payment and Cancel"
-        android:id="@+id/launchAndCancelBtn"/>
+        android:id="@+id/launchAndCancelBtn"
+        android:visibility="gone"/>
 
     <Button
         android:layout_width="wrap_content"
@@ -79,17 +90,13 @@
         android:text="Non-referenced Credit(Refund)"
         android:id="@+id/nonRefCredit"/>
 
-    <!--
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Refund $1"
+        android:id="@+id/refundBtn"
+        android:enabled="false"/>
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Add Product to Cart and Launch Register"
-            android:id="@+id/launchRegisterBtn"
-            android:layout_below="@+id/payOrderBtn"
-            android:layout_alignParentStart="true" />
-
-    -->
 
 
 </LinearLayout>

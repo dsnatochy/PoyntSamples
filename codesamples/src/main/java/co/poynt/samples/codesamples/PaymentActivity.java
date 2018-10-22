@@ -19,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -26,19 +27,30 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import co.poynt.api.model.AdjustTransactionRequest;
+import co.poynt.api.model.Business;
 import co.poynt.api.model.Card;
 import co.poynt.api.model.CardType;
+import co.poynt.api.model.ClientContext;
+import co.poynt.api.model.FundingSource;
 import co.poynt.api.model.FundingSourceAccountType;
+import co.poynt.api.model.FundingSourceType;
+import co.poynt.api.model.Link;
 import co.poynt.api.model.Order;
+import co.poynt.api.model.Processor;
 import co.poynt.api.model.Transaction;
 import co.poynt.api.model.TransactionAction;
+import co.poynt.api.model.TransactionAmounts;
 import co.poynt.api.model.TransactionReference;
 import co.poynt.api.model.TransactionReferenceType;
+import co.poynt.api.model.TransactionStatus;
 import co.poynt.os.contentproviders.orders.transactionreferences.TransactionreferencesColumns;
 import co.poynt.os.model.Intents;
 import co.poynt.os.model.Payment;
@@ -56,6 +68,7 @@ public class PaymentActivity extends Activity {
     private static final int COLLECT_PAYMENT_REQUEST = 13132;
     private static final int ZERO_DOLLAR_AUTH_REQUEST = 13133;
     private static final int COLLECT_PAYMENT_REFS_REQUEST = 13134;
+    private static final int REFUND_PAYMENT_REQUEST = 13135;
     private static final String TAG = PaymentActivity.class.getSimpleName();
 
     private IPoyntTransactionService mTransactionService;
@@ -67,12 +80,15 @@ public class PaymentActivity extends Activity {
     Button zeroDollarAuthBtn;
     Button launchAndCancelBtn;
     Button nonRefCredit;
+    Button refundBtn;
+    Button captureBtn;
     TextView orderSavedStatus;
     TextView payWithRefsResult;
 
     private Gson gson;
 
     String lastReferenceId;
+    String lastTransactionId;
 
 
     /*
@@ -213,6 +229,23 @@ public class PaymentActivity extends Activity {
             }
         });
 
+        refundBtn = (Button) findViewById(R.id.refundBtn);
+        refundBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //refund();
+                partialRefund(100L);
+            }
+        });
+
+        captureBtn = (Button) findViewById(R.id.captureBtn);
+        captureBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                capture();
+            }
+        });
+
 
 /*
 
@@ -231,10 +264,208 @@ public class PaymentActivity extends Activity {
         });
 */
     }
+
+    /**
+     * Launches only works if the auth/sales is CAPTURED. Does not support partial refund
+     */
+    private void refund() {
+        Intent displayPaymentIntent = new Intent(Intents.ACTION_DISPLAY_PAYMENT);
+        displayPaymentIntent.putExtra(Intents.INTENT_EXTRAS_TRANSACTION_ID, lastTransactionId);
+        displayPaymentIntent.putExtra(Intents.INTENT_EXTRAS_TRANSACTION_ACTION, TransactionAction.REFUND.action());
+        startActivityForResult(displayPaymentIntent, REFUND_PAYMENT_REQUEST);
+    }
+
+    public void capture(){
+        AdjustTransactionRequest capture = new AdjustTransactionRequest();
+        try {
+            mTransactionService.captureTransaction(lastTransactionId, capture, UUID.randomUUID().toString(), new IPoyntTransactionServiceListener.Stub() {
+                @Override
+                public void onResponse(Transaction transaction, String s, PoyntError poyntError) throws RemoteException {
+                    if (transaction != null){
+                        lastTransactionId = transaction.getId().toString();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(PaymentActivity.this, "Capture successful", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void onLoginRequired() throws RemoteException {
+
+                }
+
+                @Override
+                public void onLaunchActivity(Intent intent, String s) throws RemoteException {
+
+                }
+            });
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void partialRefund(final long amountToRefund){
+
+        // as a best practice, to ensure idempotency the same requestId should be used in case of an error/timeout
+        final String refundRequestId = UUID.randomUUID().toString();
+
+        try {
+            mTransactionService.getTransaction(lastTransactionId, UUID.randomUUID().toString(), new IPoyntTransactionServiceListener.Stub() {
+                @Override
+                public void onResponse(Transaction origTransaction, String s, PoyntError poyntError) throws RemoteException {
+                    if (origTransaction != null){
+
+                        Business business = CodeSamplesApplication.getInstance().getBusiness();
+                        UUID origTransactionId = origTransaction.getId();
+
+                        // if original transaction is an auth, we actually need to get
+                        // the capture id
+                        if (origTransaction.getAction() == TransactionAction.AUTHORIZE &&
+                                origTransaction.getStatus() == TransactionStatus.CAPTURED) {
+                            for (Link link : origTransaction.getLinks()) {
+                                Log.d(TAG, String.format("Link rel(%s) method(%s) hred(%s)", link.getRel(), link.getMethod(), link.getHref()));
+                                if (TransactionAction.CAPTURE.toString().equals(link.getRel())) {
+                                    String href = link.getHref();
+                                    // extract transactionId from url
+                                    String[] urlTokens = href.split("/");
+                                    String captureTransactionId = urlTokens[urlTokens.length - 1];
+                                    origTransactionId = UUID.fromString(captureTransactionId);
+                                    break;
+                                }
+                            }
+                        // can't refund an auth that has not been captured. Use IPoyntTransactinoService.adjustTransaction
+                        // to reduce auth amount
+                        } else if (origTransaction.getAction() == TransactionAction.AUTHORIZE &&
+                                origTransaction.getStatus() == TransactionStatus.AUTHORIZED) {
+                            //TODO needs to changed to be handled gracefully
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(PaymentActivity.this, "Cannot refund authorization that has not been captured", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                            return;
+                        } else if (origTransaction.getAction() == TransactionAction.AUTHORIZE &&
+                                (origTransaction.getStatus() == TransactionStatus.REFUNDED ||
+                                        origTransaction.getStatus() == TransactionStatus.PARTIALLY_REFUNDED)) {
+                            // needs to changed to be handled gracefully
+                            throw new IllegalArgumentException("Transaction has already been refunded");
+                        }
+
+                        // if it's a debit Elavon transaction need to launch payment fragment for swipe
+                        if (origTransaction.getFundingSource() != null &&
+                                // WARNING code below has no null checks
+                                business.getStores().get(0).getAcquirer().equals(Processor.ELAVON.name()) &&
+                                origTransaction.getFundingSource().isDebit() != null &&
+                                origTransaction.getFundingSource().isDebit() &&
+                                origTransaction.getAction() == TransactionAction.SALE) {
+                            Intent displayPaymentIntent = new Intent(Intents.ACTION_DISPLAY_PAYMENT);
+                            displayPaymentIntent.putExtra(Intents.INTENT_EXTRAS_TRANSACTION_ID, origTransactionId.toString());
+                            displayPaymentIntent.putExtra(Intents.INTENT_EXTRAS_TRANSACTION_ACTION, TransactionAction.REFUND.action());
+                            startActivityForResult(displayPaymentIntent, REFUND_PAYMENT_REQUEST);
+                            return;
+                        }
+
+
+                        final Transaction refundTransaction = new Transaction();
+                        // set the parentId and action as refund
+                        refundTransaction.setAction(TransactionAction.REFUND);
+                        FundingSource fundingSource = new FundingSource();
+                        // assuming this is a card transaction
+                        fundingSource.setType(FundingSourceType.CREDIT_DEBIT);
+
+                        refundTransaction.setParentId(origTransactionId);
+                        refundTransaction.setFundingSource(fundingSource);
+
+                        ClientContext clientContext = new ClientContext();
+                        if (origTransaction.getContext()!= null){
+                            clientContext.setBusinessId(origTransaction.getContext().getBusinessId());
+                            refundTransaction.setContext(clientContext);
+                        }
+
+                        // set the reference from the capture txn
+                        if (origTransaction.getReferences() != null) {
+                            refundTransaction.setReferences(origTransaction.getReferences());
+                        }
+
+                        TransactionAmounts amounts = new TransactionAmounts();
+                        //check if we have custom amount to refund
+                        if (amountToRefund != 0l
+                                && amountToRefund != origTransaction.getAmounts().getTransactionAmount().longValue()) {
+                            amounts.setTransactionAmount(amountToRefund);
+                            amounts.setCurrency(origTransaction.getAmounts().getCurrency());
+                        } else {
+                            amounts.setCashbackAmount(origTransaction.getAmounts().getCashbackAmount());
+                            amounts.setCurrency(origTransaction.getAmounts().getCurrency());
+                            amounts.setOrderAmount(origTransaction.getAmounts().getOrderAmount());
+                            amounts.setTransactionAmount(origTransaction.getAmounts().getTransactionAmount());
+                            amounts.setTipAmount(origTransaction.getAmounts().getTipAmount());
+                        }
+                        refundTransaction.setAmounts(amounts);
+
+
+                        try {
+                            mTransactionService.processTransaction(refundTransaction, refundRequestId, new IPoyntTransactionServiceListener.Stub() {
+                                @Override
+                                public void onResponse(Transaction transaction, String s, PoyntError poyntError) throws RemoteException {
+                                    if (poyntError != null) {
+                                        //TODO implement logic to handle error
+                                        Log.d(TAG, "getTransactionService poyntError: " + poyntError);
+                                    } else {
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                Toast.makeText(PaymentActivity.this, "Refund successful", Toast.LENGTH_SHORT).show();
+                                                //TODO implement logic to handle success
+                                            }
+                                        });
+                                    }
+                                }
+
+                                @Override
+                                public void onLoginRequired() throws RemoteException {
+                                    Log.w(TAG, "onLoginRequired: ");
+                                }
+
+                                @Override
+                                public void onLaunchActivity(Intent intent, String s) throws RemoteException {
+                                    Log.d(TAG, "onLaunchActivity: ");
+                                }
+
+                            });
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                            //TODO handle
+                        }
+
+                    }
+                }
+
+                @Override
+                public void onLoginRequired() throws RemoteException {
+
+                }
+
+                @Override
+                public void onLaunchActivity(Intent intent, String s) throws RemoteException {
+
+                }
+            });
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+
+
+    }
+
+
     private void paymentWithCustomRefs(){
         Payment payment = new Payment();
         payment.setCurrency("USD");
-        payment.setAmount(200l);
         payment.setReferences(generateReferences());
         payment.setSkipSignatureScreen(true);
         payment.setSkipReceiptScreen(true);
@@ -282,7 +513,7 @@ public class PaymentActivity extends Activity {
     private void bindServices() {
         bindService(Intents.getComponentIntent(Intents.COMPONENT_POYNT_ORDER_SERVICE),
                 mOrderServiceConnection, Context.BIND_AUTO_CREATE);
-        bindService(Intents.getComponentIntent(Intents.COMPONENT_POYNT_TRANSACTION_SERVICE),
+        bindService(CodeSamplesApplication.getInstance().getTransactionServiceIntent(),
                 mTransactionServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -416,13 +647,6 @@ public class PaymentActivity extends Activity {
         payment.setSkipReceiptScreen(true);
         payment.setSkipPaymentConfirmationScreen(true);
 
-        payment.setCallerPackageName("co.poynt.sample");
-        Map<String, String> processorOptions = new HashMap<>();
-        processorOptions.put("installments", "2");
-        processorOptions.put("type", "emi");
-        processorOptions.put("originalAmount", "2400");
-        payment.setProcessorOptions(processorOptions);
-
         // start Payment activity for result
         try {
             Intent collectPaymentIntent = new Intent(Intents.ACTION_COLLECT_PAYMENT);
@@ -462,6 +686,10 @@ public class PaymentActivity extends Activity {
                             Type txnType = new TypeToken<Transaction>() {
                             }.getType();
                             Log.d(TAG, "onActivityResult: transaction: " + gson.toJson(t, txnType));
+
+                            lastTransactionId = t.getId().toString();
+                            refundBtn.setEnabled(true);
+                            captureBtn.setEnabled(true);
 
                             getTransaction(t.getId().toString());
                             //Log.d(TAG, "Card token: " + t.getProcessorResponse().getCardToken());
@@ -535,7 +763,8 @@ public class PaymentActivity extends Activity {
                     }
                 }
             }
-
+        } else if (requestCode == REFUND_PAYMENT_REQUEST){
+            //TODO implement logic to hanle success or failure
         }
     }
 
