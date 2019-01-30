@@ -259,7 +259,7 @@ public class PaymentActivity extends Activity {
     }
     private void doZeroDollarAuth() {
         Payment p = new Payment();
-        p.setAction(TransactionAction.VERIFY);
+//        p.setAction(TransactionAction.VERIFY);
         p.setCurrency("USD");
         p.setAuthzOnly(true);
 //        p.setVerifyOnly(true);

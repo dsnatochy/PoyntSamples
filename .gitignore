@@ -8,3 +8,4 @@
 .idea/*
 app/app.iml
 */*.iml
+.idea/runConfigurations.xml

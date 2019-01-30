@@ -24,7 +24,7 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import co.poynt.api.model.Discount;
-import co.poynt.api.model.ExchangeRate;
+//import co.poynt.api.model.ExchangeRate;
 import co.poynt.api.model.OrderItem;
 import co.poynt.os.model.Intents;
 import co.poynt.os.model.SecondScreenLabels;
@@ -352,33 +352,33 @@ public class SecondScreenServiceActivity extends Activity {
 
     @OnClick(R.id.dccScreenBtn)
     public void showDccScreen() {
-        ExchangeRate ex = new ExchangeRate();
-        ex.setProvider("Citibank UAE"); // printed on the receipt
-        ex.setTxnAmount(10000L);
-        ex.setTxnCurrency("USD");
-
-        ex.setRate(367326L);
-        ex.setRatePrecision(5L); // basically the rate above is 3.67326
-
-        ex.setCardCurrency("AED");
-        ex.setMarkupPercentage("250"); // shows the markup in the UI
-        ex.setCardAmount(37651L);
-        try {
-            secondScreenService.captureDccChoice(ex, null, new IPoyntSecondScreenDynamicCurrConversionListener.Stub() {
-                @Override
-                public void onCurrencyConversionSelected(boolean b) throws RemoteException {
-                    Log.d(TAG, "onCurrencyConversionSelected: " + b);
-                    setStatus(dccStatus, "DCC option selected");
-                    showWelcomeScreen();
-                }
-
-                @Override
-                public void onCancel() throws RemoteException {
-                    Log.d(TAG, "onCancel()");
-                }
-            });
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+//        ExchangeRate ex = new ExchangeRate();
+//        ex.setProvider("Citibank UAE"); // printed on the receipt
+//        ex.setTxnAmount(10000L);
+//        ex.setTxnCurrency("USD");
+//
+//        ex.setRate(367326L);
+//        ex.setRatePrecision(5L); // basically the rate above is 3.67326
+//
+//        ex.setCardCurrency("AED");
+//        ex.setMarkupPercentage("250"); // shows the markup in the UI
+//        ex.setCardAmount(37651L);
+//        try {
+//            secondScreenService.captureDccChoice(ex, null, new IPoyntSecondScreenDynamicCurrConversionListener.Stub() {
+//                @Override
+//                public void onCurrencyConversionSelected(boolean b) throws RemoteException {
+//                    Log.d(TAG, "onCurrencyConversionSelected: " + b);
+//                    setStatus(dccStatus, "DCC option selected");
+//                    showWelcomeScreen();
+//                }
+//
+//                @Override
+//                public void onCancel() throws RemoteException {
+//                    Log.d(TAG, "onCancel()");
+//                }
+//            });
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
     }
 }

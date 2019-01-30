@@ -31,7 +31,7 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import co.poynt.api.model.Discount;
-import co.poynt.api.model.Fee;
+//import co.poynt.api.model.Fee;
 import co.poynt.api.model.OrderItem;
 import co.poynt.api.model.TransactionAmounts;
 //import co.poynt.os.model.InstallmentsOption;
@@ -259,59 +259,59 @@ public class SecondScreenServiceV2Activity extends Activity {
         discount2.setCustomName("Order discount2");
         orderDiscounts.add(discount2);
 
-        List<Fee> fees = new ArrayList<>();
+//        List<Fee> fees = new ArrayList<>();
 
-        Fee fee = new Fee();
-        fee.setAmount(25l);
-        fee.setName("Recycle fee");
-        fees.add(fee);
+//        Fee fee = new Fee();
+//        fee.setAmount(25l);
+//        fee.setName("Recycle fee");
+//        fees.add(fee);
 
-        try {
-            if (secondScreenService != null) {
-                BigDecimal total = new BigDecimal(0);
-                for (OrderItem item : items) {
-                    BigDecimal price = new BigDecimal(item.getUnitPrice());
-                    price.setScale(2, RoundingMode.HALF_UP);
-                    price = price.multiply(new BigDecimal(item.getQuantity()));
-                    total = total.add(price);
-                }
-
-                TransactionAmounts transactionAmounts = new TransactionAmounts();
-                transactionAmounts.setOrderAmount(total.longValue());
-                transactionAmounts.setCurrency("USD");
-                transactionAmounts.setTipAmount(100l);
-
-                // options
-                Bundle options = new Bundle();
-                /**
-                 * TITLE, LEFT_BUTTON_TITLE, RIGHT_BUTTON_TITLE
-                 */
-                options.putString(Intents.EXTRA_TITLE, "Confirm");
-                options.putString(Intents.EXTRA_LEFT_BUTTON_TITLE, "NO TIP");
-                options.putString(Intents.EXTRA_RIGHT_BUTTON_TITLE, "ADD TIP");
-                secondScreenService.showCartConfirmation(items,
-                        itemDiscounts,
-                        fees,
-                        transactionAmounts,
-                        true,
-                        options,
-                        new IPoyntActionButtonListener.Stub() {
-                            @Override
-                            public void onLeftButtonClicked() throws RemoteException {
-                                showConfirmation("why did you decline?");
-                                setStatus(showCartStatus, "LEFT BUTTON TAPPED");
-                            }
-
-                            @Override
-                            public void onRightButtonClicked() throws RemoteException {
-                                showConfirmation("Thanks for confirming!");
-                                setStatus(showCartStatus, "LEFT BUTTON TAPPED");
-                            }
-                        });
-            }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            if (secondScreenService != null) {
+//                BigDecimal total = new BigDecimal(0);
+//                for (OrderItem item : items) {
+//                    BigDecimal price = new BigDecimal(item.getUnitPrice());
+//                    price.setScale(2, RoundingMode.HALF_UP);
+//                    price = price.multiply(new BigDecimal(item.getQuantity()));
+//                    total = total.add(price);
+//                }
+//
+//                TransactionAmounts transactionAmounts = new TransactionAmounts();
+//                transactionAmounts.setOrderAmount(total.longValue());
+//                transactionAmounts.setCurrency("USD");
+//                transactionAmounts.setTipAmount(100l);
+//
+//                // options
+//                Bundle options = new Bundle();
+//                /**
+//                 * TITLE, LEFT_BUTTON_TITLE, RIGHT_BUTTON_TITLE
+//                 */
+//                options.putString(Intents.EXTRA_TITLE, "Confirm");
+//                options.putString(Intents.EXTRA_LEFT_BUTTON_TITLE, "NO TIP");
+//                options.putString(Intents.EXTRA_RIGHT_BUTTON_TITLE, "ADD TIP");
+////                secondScreenService.showCartConfirmation(items,
+////                        itemDiscounts,
+////                        fees,
+////                        transactionAmounts,
+////                        true,
+////                        options,
+////                        new IPoyntActionButtonListener.Stub() {
+////                            @Override
+////                            public void onLeftButtonClicked() throws RemoteException {
+////                                showConfirmation("why did you decline?");
+////                                setStatus(showCartStatus, "LEFT BUTTON TAPPED");
+////                            }
+////
+////                            @Override
+////                            public void onRightButtonClicked() throws RemoteException {
+////                                showConfirmation("Thanks for confirming!");
+////                                setStatus(showCartStatus, "LEFT BUTTON TAPPED");
+////                            }
+////                        });
+//            }
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
 
     }
 

@@ -44,6 +44,37 @@ public class NonPaymentCardReaderActivity extends Activity {
     private ScrollView mScrollView;
     private EditText apduDataInput;
 
+    // read memory command
+    // the last 2 bytes specify the length of bytes to read. In this example "00001" means 1 byte
+    // the 2 bytes before that specify the memory location. In this example "0030"
+    private final String READ_MEM_CMD = "03A00100000400300001";
+
+    // verify programmable security code (PSC) command. The last 3 bytes are the PSC
+    // in this example: FFFFFF. Response "9000" indicates success
+    private final String VERIFY_PSC_SLE4442_CARD_CMD = "03A003000003FFFFFF";
+
+    // write memory command
+    // the last byte is the data byte. in this example: "11"
+    // the previous 2 bytes is the memory location. in this example: "0030"
+    private final String WRITE_MEM_CMD = "03A002000003003011";
+
+    // write memory with protect command
+    // the last byte is the data byte. in this example: "11"
+    // the previous 2 bytes is the memory location. in this example: "0031"
+    private final String WRITE_MEM_WITH_PROTECT_CMD = "03A005000003000911";
+
+
+    // read memory with protect command
+    // the last 2 bytes are the length of bytes to read. in this example "0001" (1 byte)
+    // the 2 bytes prior to that is the memory location. in this example "0009"
+    private final String READ_MEM_WITH_PROTECT_CMD = "03A00400000400090001";
+
+
+
+    private final String VERIFY_PSC_SLE4428_CARD_CMD = "03A003000002FFFF";
+
+
+
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -82,7 +113,7 @@ public class NonPaymentCardReaderActivity extends Activity {
                     @Override
                     protected Void doInBackground(Void... params) {
                         ConnectionOptions connectionOptions = new ConnectionOptions();
-                        connectionOptions.setContactInterface(ConnectionOptions.ContactInterfaceType.GSM);
+                        connectionOptions.setContactInterface(ConnectionOptions.ContactInterfaceType.SLE);
                         connectionOptions.setTimeout(60);
                         try {
                             cardReaderService.connectToCard(connectionOptions,
@@ -193,7 +224,7 @@ public class NonPaymentCardReaderActivity extends Activity {
             public void onClick(View v) {
 
                 APDUData apduData = new APDUData();
-                apduData.setContactInterface(APDUData.ContactInterfaceType.GSM);
+                apduData.setContactInterface(APDUData.ContactInterfaceType.SLE);
                 apduData.setTimeout(60);
                 apduData.setCommandAPDU(apduDataInput.getText().toString());
                 try {
@@ -308,6 +339,63 @@ public class NonPaymentCardReaderActivity extends Activity {
                                 logReceivedMessage("Select Masterfile failed: " + poyntError.toString());
                             }
                         });
+            }
+        });
+        Button verifyPSC_SLE4442_Btn = (Button) findViewById(R.id.verifyPSC_SLE4442_Btn);
+        verifyPSC_SLE4442_Btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                APDUData apduData = new APDUData();
+                apduData.setContactInterface(APDUData.ContactInterfaceType.SLE);
+                apduData.setTimeout(60);
+                apduData.setCommandAPDU(VERIFY_PSC_SLE4442_CARD_CMD);
+                try {
+                    cardReaderService.exchangeAPDU(apduData,
+                            new IPoyntExchangeAPDUListener.Stub() {
+
+
+                                @Override
+                                public void onSuccess(String rAPDU) throws RemoteException {
+                                    logReceivedMessage("Response APDU: " + rAPDU);
+                                }
+
+                                @Override
+                                public void onError(PoyntError poyntError) throws RemoteException {
+                                    logReceivedMessage("onError: " + poyntError.toString());
+                                }
+                            });
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        Button verifyPSC_SLE4428_Btn = (Button) findViewById(R.id.verifyPSC_SLE4428_Btn);
+        verifyPSC_SLE4428_Btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                APDUData apduData = new APDUData();
+                apduData.setContactInterface(APDUData.ContactInterfaceType.SLE);
+                apduData.setTimeout(60);
+                apduData.setCommandAPDU(VERIFY_PSC_SLE4428_CARD_CMD);
+                try {
+                    cardReaderService.exchangeAPDU(apduData,
+                            new IPoyntExchangeAPDUListener.Stub() {
+
+
+                                @Override
+                                public void onSuccess(String rAPDU) throws RemoteException {
+                                    logReceivedMessage("Response APDU: " + rAPDU);
+                                }
+
+                                @Override
+                                public void onError(PoyntError poyntError) throws RemoteException {
+                                    logReceivedMessage("onError: " + poyntError.toString());
+                                }
+                            });
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }

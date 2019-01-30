@@ -26,8 +26,8 @@ import co.poynt.api.model.OrderStatus;
 import co.poynt.api.model.OrderStatuses;
 import co.poynt.api.model.Product;
 import co.poynt.api.model.ProductType;
-import co.poynt.api.model.SelectableValue;
-import co.poynt.api.model.SelectableVariation;
+//import co.poynt.api.model.SelectableValue;
+//import co.poynt.api.model.SelectableVariation;
 import co.poynt.api.model.UnitOfMeasure;
 import co.poynt.api.model.Variant;
 
@@ -183,50 +183,50 @@ public class Util {
         product.setType(ProductType.SIMPLE);
         Variant variant = new Variant();
         variant.setSku(sku);
-
-        // size options (only 1 allowed)
-        SelectableVariation sizeVariation = new SelectableVariation();
-        sizeVariation.setAttribute("Size");
-        sizeVariation.setCardinality("1");
-
-        SelectableValue valueM = new SelectableValue();
-        valueM.setDefaultValue(true);
-        valueM.setName("M");
-        valueM.setPriceDelta(new CurrencyAmount(0l, "USD"));
-
-        SelectableValue valueL = new SelectableValue();
-        valueL.setName("L");
-        valueL.setPriceDelta(new CurrencyAmount(0l, "USD"));
-
-        SelectableValue valueXL = new SelectableValue();
-        valueXL.setName("XL");
-        valueXL.setPriceDelta(new CurrencyAmount(0l, "USD"));
-
-        sizeVariation.setValues(Arrays.asList(valueM, valueL, valueXL));
-
-        // color options (only 1 allowed)
-        SelectableVariation colorVariation = new SelectableVariation();
-        colorVariation.setAttribute("Color");
-        colorVariation.setCardinality("1");
-
-        SelectableValue colorWhite = new SelectableValue();
-        colorWhite.setDefaultValue(true);
-        colorWhite.setName("White");
-        colorWhite.setPriceDelta(new CurrencyAmount(0l, "USD"));
-
-        SelectableValue colorGreen = new SelectableValue();
-        colorGreen.setName("Green");
-        colorGreen.setPriceDelta(new CurrencyAmount(0l, "USD"));
-
-        SelectableValue colorBlue = new SelectableValue();
-        colorBlue.setName("Blue");
-        colorBlue.setPriceDelta(new CurrencyAmount(0l, "USD"));
-
-        colorVariation.setValues(Arrays.asList(colorWhite, colorGreen, colorBlue));
-
-
-        variant.setSelectableVariations(Arrays.asList(sizeVariation, colorVariation));
-        product.setSelectableVariants(Collections.singletonList(variant));
+//
+//        // size options (only 1 allowed)
+//        SelectableVariation sizeVariation = new SelectableVariation();
+//        sizeVariation.setAttribute("Size");
+//        sizeVariation.setCardinality("1");
+//
+//        SelectableValue valueM = new SelectableValue();
+//        valueM.setDefaultValue(true);
+//        valueM.setName("M");
+//        valueM.setPriceDelta(new CurrencyAmount(0l, "USD"));
+//
+//        SelectableValue valueL = new SelectableValue();
+//        valueL.setName("L");
+//        valueL.setPriceDelta(new CurrencyAmount(0l, "USD"));
+//
+//        SelectableValue valueXL = new SelectableValue();
+//        valueXL.setName("XL");
+//        valueXL.setPriceDelta(new CurrencyAmount(0l, "USD"));
+//
+//        sizeVariation.setValues(Arrays.asList(valueM, valueL, valueXL));
+//
+//        // color options (only 1 allowed)
+//        SelectableVariation colorVariation = new SelectableVariation();
+//        colorVariation.setAttribute("Color");
+//        colorVariation.setCardinality("1");
+//
+//        SelectableValue colorWhite = new SelectableValue();
+//        colorWhite.setDefaultValue(true);
+//        colorWhite.setName("White");
+//        colorWhite.setPriceDelta(new CurrencyAmount(0l, "USD"));
+//
+//        SelectableValue colorGreen = new SelectableValue();
+//        colorGreen.setName("Green");
+//        colorGreen.setPriceDelta(new CurrencyAmount(0l, "USD"));
+//
+//        SelectableValue colorBlue = new SelectableValue();
+//        colorBlue.setName("Blue");
+//        colorBlue.setPriceDelta(new CurrencyAmount(0l, "USD"));
+//
+//        colorVariation.setValues(Arrays.asList(colorWhite, colorGreen, colorBlue));
+//
+//
+//        variant.setSelectableVariations(Arrays.asList(sizeVariation, colorVariation));
+//        product.setSelectableVariants(Collections.singletonList(variant));
 
         return product;
     }

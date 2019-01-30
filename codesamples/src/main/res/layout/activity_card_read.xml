@@ -80,6 +80,18 @@
 
     </LinearLayout>
 
+    <Button
+        android:id="@+id/verifyPSC_SLE4442_Btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="VERIFY PSC (SLE4442)" />
+
+    <Button
+        android:id="@+id/verifyPSC_SLE4428_Btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="VERIFY PSC (SLE4428)" />
+
     <View
         android:id="@+id/separator"
         android:layout_width="match_parent"
